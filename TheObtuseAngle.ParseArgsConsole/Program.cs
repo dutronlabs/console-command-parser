@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using TheObtuseAngle.ConsoleUtilities;
 
 namespace TheObtuseAngle.ParseArgsConsole
@@ -47,29 +42,13 @@ namespace TheObtuseAngle.ParseArgsConsole
                     return;
                 }
 
-                if (restoreOnly && backupOnly)
-                {
-                    Console.WriteLine("Restore only and backup only are mutually exclusive.  Make up your mind.");
-                    return;
-                }
-
-                var connectionStringBuilder = new SqlConnectionStringBuilder();
-                connectionStringBuilder.DataSource = instance;
-                connectionStringBuilder.UserID = user;
-                connectionStringBuilder.Password = password;
-
-                Console.WriteLine("Working in the directory: {0}", scriptBase);
-                Console.WriteLine("Selected environment: {0}", environment);
-                Console.WriteLine("Connection string:{0}  {1}", Environment.NewLine, connectionStringBuilder.ToString());
-
-                if (backupOnly)
-                {
-                    Console.WriteLine("Performing backup only");
-                }
-                else if (restoreOnly)
-                {
-                    Console.WriteLine("Performing restore only");
-                }
+                Console.WriteLine("Script base: {0}", scriptBase);
+                Console.WriteLine("Environment: {0}", environment);
+                Console.WriteLine("Instance: {0}", instance);
+                Console.WriteLine("User: {0}", user);
+                Console.WriteLine("Password: {0}", password);
+                Console.WriteLine("Restore only: {0}", restoreOnly);
+                Console.WriteLine("Backup only: {0}", backupOnly);
             }
             catch (Exception e)
             {
