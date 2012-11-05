@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
@@ -39,7 +40,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (consoleArgs.HasArgument(parseOptions.DebugFlag))
             {
-                ConsoleHelper.HandleDebugFlag(parseOptions.EnableDebugFlag, parseOptions.DebugFlagAction);
+                HandleDebugFlag();
             }
 
             var argList = possibleArguments.ToList();
@@ -65,7 +66,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (consoleArgs.HasArgument(parseOptions.DebugFlag))
             {
-                ConsoleHelper.HandleDebugFlag(parseOptions.EnableDebugFlag, parseOptions.DebugFlagAction);
+                HandleDebugFlag();
             }
 
             var commands = possibleCommands.ToList();
@@ -158,13 +159,18 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
+            int? offsetOverride = null;
+            var spacer = "  ";
+
             if (writePrefix)
             {
+                offsetOverride = 7;
+                spacer = string.Empty;
                 output.WriteLine();
-                output.WriteLine("Usage:");
+                output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
             }
 
-            output.Write("\t{0} ", command.Name);
+            output.Write("{0}{1} ", spacer, command.Name);
 
             if (writeArgumentDetails)
             {
@@ -172,10 +178,15 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
             else
             {
+                var argumentUsageBuilder = new StringBuilder();
+
                 foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired))
                 {
-                    WriteArgument(argument, true);
+                    argumentUsageBuilder.Append(GetArgumentUsageString(argument, true));
+                    argumentUsageBuilder.Append(' ');
                 }
+
+                output.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
             }
 
             output.WriteLine();
@@ -188,13 +199,16 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
+            int? offsetOverride = null;
             int maxNameLength = 0;
             bool hasRequiredArgs = false;
             var formatBuilder = new StringBuilder(" ");
             var orderedArgs = arguments.OrderByDescending(a => a.IsRequired).ToList();
+            var argumentUsageBuilder = new StringBuilder();
 
             if (writePrefix)
             {
+                offsetOverride = 7;
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName); 
             }
 
@@ -203,16 +217,18 @@ namespace TheObtuseAngle.ConsoleUtilities
                 int length = arg.RequiresValue ? arg.Name.Length + parseOptions.ArgumentValueIndicator.Length + 1 : arg.Name.Length;
                 maxNameLength = length > maxNameLength ? length : maxNameLength;
                 hasRequiredArgs = hasRequiredArgs || arg.IsRequired;
-                WriteArgument(arg, false);
+                argumentUsageBuilder.Append(GetArgumentUsageString(arg, false));
+                argumentUsageBuilder.Append(' ');
             }
 
+            output.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
             output.WriteLine();
             output.WriteLine();
             formatBuilder.Append(hasRequiredArgs ? string.Format("{{0,-{0}}}", parseOptions.RequiredArgumentIndicator.Length) : "{0}");
             formatBuilder.AppendFormat("{{1,-{0}}} - ", maxNameLength);
             string format = formatBuilder.ToString();
 
-            foreach (var arg in arguments)
+            foreach (var arg in orderedArgs)
             {
                 var description = string.IsNullOrWhiteSpace(arg.Alias)
                     ? arg.Description
@@ -222,57 +238,21 @@ namespace TheObtuseAngle.ConsoleUtilities
                     arg.IsRequired ? parseOptions.RequiredArgumentIndicator : string.Empty,
                     arg.RequiresValue ? string.Format("{0}{1}{2}", arg.Name, parseOptions.ArgumentValueSeparator, parseOptions.ArgumentValueIndicator) : arg.Name);
 
-                if (!parseOptions.IsUsingConsoleOutput || Console.CursorLeft + description.Length < Console.BufferWidth)
-                {
-                    output.Write(description);
-                }
-                else
-                {
-                    int position = Console.CursorLeft;
-                    int lineLength = Console.BufferWidth - position - 1; // The extra -1 is to prevent an extra line if the word ends exactly where the buffer ends.
-                    var lineBuilder = new StringBuilder();
-
-                    foreach (var word in description.Split(new[] { ' ' }))
-                    {
-                        if (lineBuilder.Length + word.Length + 1 > lineLength)
-                        {
-                            output.Write(lineBuilder.ToString());
-                            output.WriteLine();
-                            output.Write(string.Empty.PadLeft(position));
-                            lineBuilder.Clear();
-                        }
-
-                        lineBuilder.Append(word);
-                        lineBuilder.Append(' ');
-                    }
-
-                    if (lineBuilder.Length > 0)
-                    {
-                        output.Write(lineBuilder.ToString());
-                    }
-                }
-
+                output.WriteWrapped(description);
                 output.WriteLine();
             }
         }
 
-        protected virtual void WriteArgument(IArgument argument, bool useRequiredFormatter)
+        protected virtual string GetArgumentUsageString(IArgument argument, bool useRequiredFormatter)
         {
-            if (quietMode)
-            {
-                return;
-            }
-
             if (argument.IsRequired)
             {
-                output.Write(useRequiredFormatter ? string.Format(parseOptions.RequiredArgumentFormat, argument.Name) : argument.Name);
+                return useRequiredFormatter ? string.Format(parseOptions.RequiredArgumentFormat, argument.Name) : argument.Name;
             }
             else
             {
-                output.Write(parseOptions.OptionalArgumentFormat, argument.Name);
+                return string.Format(parseOptions.OptionalArgumentFormat, argument.Name);
             }
-
-            output.Write(' ');
         }
 
         protected virtual void WriteException(Exception exception)
@@ -422,6 +402,25 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             return ParseResult.Failure;
+        }
+
+        private void HandleDebugFlag()
+        {
+            if (!parseOptions.EnableDebugFlag)
+            {
+                return;
+            }
+
+            switch (parseOptions.DebugFlagAction)
+            {
+                case DebugFlagAction.DebuggerLaunch:
+                    Debugger.Launch();
+                    break;
+                case DebugFlagAction.ThreadSleep:
+                    output.WriteLine("Pausing for 10 seconds to allow you to attach to the process...");
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+                    break;
+            }
         }
     }
 }

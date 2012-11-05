@@ -3,32 +3,32 @@ using System.Linq;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Text;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
     public static class ConsoleHelper
     {
         private static readonly object writeLock = new object();
+        private static TextWriter output;
 
         static ConsoleHelper()
         {
-            Output = Console.Out;
+            output = Console.Out;
         }
-
-        private static TextWriter Output { get; set; }
 
         public static void Initialize(TextWriter output)
         {
-            Output = output;
+            ConsoleHelper.output = output;
         }
 
         public static void WriteException(Exception e)
         {
             while (e != null)
             {
-                Output.WriteLine(e.Message);
-                Output.WriteLine(e.StackTrace);
-                Output.WriteLine();
+                output.WriteLine(e.Message);
+                output.WriteLine(e.StackTrace);
+                output.WriteLine();
                 e = e.InnerException;
             }
         }
@@ -39,22 +39,43 @@ namespace TheObtuseAngle.ConsoleUtilities
             return val == "y" || val == "1" || val == "yes";
         }
 
-        internal static void HandleDebugFlag(bool debugFlagEnabled, DebugFlagAction action)
+        public static void WriteWrapped(string textToWrap)
         {
-            if (!debugFlagEnabled)
-            {
-                return;
-            }
+            WriteWrapped(output, textToWrap);
+        }
 
-            switch (action)
+        public static void WriteWrapped(TextWriter output, string textToWrap, int? offsetOverride = null)
+        {
+            if (!object.ReferenceEquals(output, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
             {
-                case DebugFlagAction.DebuggerLaunch:
-                    Debugger.Launch();
-                    break;
-                case DebugFlagAction.ThreadSleep:
-                    Output.WriteLine("Pausing for 10 seconds to allow you to attach to the process...");
-                    Thread.Sleep(TimeSpan.FromSeconds(10));
-                    break;
+                output.Write(textToWrap);
+            }
+            else
+            {
+                int position = offsetOverride.HasValue ? offsetOverride.Value : Console.CursorLeft;
+                int lineLength = Console.BufferWidth - Console.CursorLeft - 1; // The extra -1 is to prevent an extra line if the word ends exactly where the buffer ends.
+                int subsequentLineLength = Console.BufferWidth - position - 1;
+                var lineBuilder = new StringBuilder();
+
+                foreach (var word in textToWrap.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (lineBuilder.Length + word.Length + 1 > lineLength)
+                    {
+                        output.Write(lineBuilder.ToString());
+                        output.WriteLine();
+                        output.Write(string.Empty.PadLeft(position));
+                        lineLength = subsequentLineLength;
+                        lineBuilder.Clear();
+                    }
+
+                    lineBuilder.Append(word);
+                    lineBuilder.Append(' ');
+                }
+
+                if (lineBuilder.Length > 0)
+                {
+                    output.Write(lineBuilder.ToString());
+                }
             }
         }
     }

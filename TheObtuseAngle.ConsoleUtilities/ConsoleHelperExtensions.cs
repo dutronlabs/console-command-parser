@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 
 namespace TheObtuseAngle.ConsoleUtilities
@@ -23,6 +24,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         public static bool HasArgument(this string[] args, string arg)
         {
             return args == null || args.Any(a => a.Equals(arg, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public static void WriteWrapped(this TextWriter output, string textToWrap, int? offsetOverride = null)
+        {
+            ConsoleHelper.WriteWrapped(output, textToWrap, offsetOverride);
         }
     }
 }
