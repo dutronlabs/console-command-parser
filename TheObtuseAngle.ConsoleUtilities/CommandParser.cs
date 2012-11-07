@@ -80,7 +80,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             var commands = possibleCommands.ToList();
-            commands.Add(new HelpCommand(commands, output, WriteCommandUsage));
+            commands.Add(new HelpCommand(commands, output, WriteUsage));
 
             if (ParseOptions.QuietModeArgument != null)
             {
@@ -123,7 +123,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
             {
-                WriteCommandUsage(command);
+                WriteUsage(command);
                 return hasHelpArg ? CommandParseResult.DisplayedHelp : CommandParseResult.Failure;
             }
 
@@ -158,11 +158,17 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }        
 
-        protected virtual void WriteUsage(IEnumerable<ICommand> commands)
+        public virtual void WriteUsage(IEnumerable<ICommand> commands)
         {
             if (quietMode)
             {
                 return;
+            }
+
+            var commandList = commands.ToList();
+            if (!commandList.Any(c => c.Name.Equals(HelpCommand.HelpCommandName) && c.Description.Equals(HelpCommand.HelpCommandDescription)))
+            {
+                commandList.Add(new HelpCommand(commands, output, WriteUsage));
             }
 
             output.WriteLine();
@@ -170,18 +176,18 @@ namespace TheObtuseAngle.ConsoleUtilities
             output.WriteLine();
             output.WriteLine("Available Commands:");
 
-            foreach (var command in commands)
+            foreach (var command in commandList)
             {
-                WriteCommandUsage(command, false, false);
+                WriteUsage(command, false, false);
             }
         }
 
-        private void WriteCommandUsage(ICommand command)
+        public void WriteUsage(ICommand command)
         {
-            WriteCommandUsage(command, true, true);
+            WriteUsage(command, true, true);
         }
 
-        protected virtual void WriteCommandUsage(ICommand command, bool writePrefix, bool writeArgumentDetails)
+        protected virtual void WriteUsage(ICommand command, bool writePrefix, bool writeArgumentDetails)
         {
             if (quietMode)
             {
@@ -221,7 +227,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             output.WriteLine();
         }
 
-        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix = true)
+        public void WriteUsage(IEnumerable<IArgument> arguments)
+        {
+            WriteUsage(arguments, true);
+        }
+
+        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix)
         {
             if (quietMode)
             {
