@@ -10,11 +10,6 @@ namespace TheObtuseAngle.ConsoleUtilities
             IsSuccess = true;
         }
 
-        public ArgumentParseResult(bool hasNoConsoleArgs)
-        {
-            this.HasNoConsoleArgs = hasNoConsoleArgs;
-        }
-
         public ArgumentParseResult(IArgument argumentWithMissingValue)
         {
             this.ArgumentWithMissingValue = argumentWithMissingValue;
@@ -31,8 +26,6 @@ namespace TheObtuseAngle.ConsoleUtilities
         }
 
         public bool IsSuccess { get; private set; }
-
-        public bool HasNoConsoleArgs { get; private set; }
 
         public IArgument ArgumentWithMissingValue { get; private set; }
 

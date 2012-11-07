@@ -4,63 +4,60 @@ namespace TheObtuseAngle.ConsoleUtilities
 {
     public class Argument : IArgument
     {
-        private static readonly IArgument quietModeArgument;
-        private static readonly IArgument helpArgument;
         private string name;
-        private string alias;
+        private string[] aliases;
         private string description;
         private bool isRequired;
         private bool requiresValue;
         private Action<string> valueSetter;
-
-        static Argument()
-        {
-            quietModeArgument = new Argument("-quiet", "-q", "Suppresses all output", false, false, null);
-            helpArgument = new Argument("-help", "/?", "Displays this usage information", false, false, null);
-        }
 
         public Argument()
         {
         }
 
         public Argument(string name, bool isRequired, Action<string> valueSetter)
-            : this(name, null, null, false, isRequired, valueSetter)
+            : this(name, new string[] { null }, null, false, isRequired, valueSetter)
         {
         }
 
         public Argument(string name, string alias, bool isRequired, Action<string> valueSetter)
-            : this(name, alias, null, false, isRequired, valueSetter)
+            : this(name, new[] { alias }, null, false, isRequired, valueSetter)
+        {
+        }
+
+        public Argument(string name, string[] aliases, bool isRequired, Action<string> valueSetter)
+            : this(name, aliases, null, false, isRequired, valueSetter)
         {
         }
 
         public Argument(string name, bool requiresValue, bool isRequired, Action<string> valueSetter)
-            : this(name, null, null, requiresValue, isRequired, valueSetter)
+            : this(name, new string[] { null }, null, requiresValue, isRequired, valueSetter)
         {
         }
 
         public Argument(string name, string alias, bool requiresValue, bool isRequired, Action<string> valueSetter)
-            : this(name, alias, null, requiresValue, isRequired, valueSetter)
+            : this(name, new[] { alias }, null, requiresValue, isRequired, valueSetter)
+        {
+        }
+
+        public Argument(string name, string[] aliases, bool requiresValue, bool isRequired, Action<string> valueSetter)
+            : this(name, aliases, null, requiresValue, isRequired, valueSetter)
         {
         }
 
         public Argument(string name, string alias, string description, bool requiresValue, bool isRequired, Action<string> valueSetter)
+            : this(name, new[] { alias }, description, requiresValue, isRequired, valueSetter)
+        {
+        }
+
+        public Argument(string name, string[] aliases, string description, bool requiresValue, bool isRequired, Action<string> valueSetter)
         {
             this.name = name;
-            this.alias = alias;
+            this.aliases = aliases;
             this.description = description;
             this.requiresValue = requiresValue;
             this.isRequired = isRequired;
             this.valueSetter = valueSetter;
-        }
-
-        internal static IArgument QuietModeArgument
-        {
-            get { return quietModeArgument; }
-        }
-
-        internal static IArgument HelpArgument
-        {
-            get { return helpArgument; }
         }
 
         public virtual string Name
@@ -69,10 +66,10 @@ namespace TheObtuseAngle.ConsoleUtilities
             set { this.name = value; }
         }
 
-        public virtual string Alias
+        public virtual string[] Aliases
         {
-            get { return this.alias; }
-            set { this.alias = value; }
+            get { return this.aliases; }
+            set { this.aliases = value; }
         }
 
         public virtual string Description
@@ -81,7 +78,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             set { description = value; }
         }
 
-        public bool RequiresValue
+        public virtual bool RequiresValue
         {
             get { return this.requiresValue; }
             set { this.requiresValue = value; }

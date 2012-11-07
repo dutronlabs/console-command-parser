@@ -18,7 +18,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static bool HasArgument(this string[] consoleArgs, IArgument arg)
         {
-            return consoleArgs != null && consoleArgs.Any(a => a.Equals(arg.Name, StringComparison.InvariantCultureIgnoreCase) || a.Equals(arg.Alias, StringComparison.InvariantCultureIgnoreCase));
+            return consoleArgs != null && arg != null && consoleArgs.Any(a => a.Equals(arg.Name, StringComparison.InvariantCultureIgnoreCase) || arg.Aliases.Any(alias => alias.Equals(a, StringComparison.InvariantCultureIgnoreCase)));
         }
 
         public static bool HasArgument(this string[] args, string arg)

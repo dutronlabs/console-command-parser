@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Linq;
 using System.IO;
-using System.Diagnostics;
-using System.Threading;
 using System.Text;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
     public static class ConsoleHelper
     {
-        private static readonly object writeLock = new object();
         private static TextWriter output;
 
         static ConsoleHelper()
@@ -57,7 +53,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 int subsequentLineLength = Console.BufferWidth - position - 1;
                 var lineBuilder = new StringBuilder();
 
-                foreach (var word in textToWrap.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var word in textToWrap.Split(new[] { ' ' }))
                 {
                     if (lineBuilder.Length + word.Length + 1 > lineLength)
                     {

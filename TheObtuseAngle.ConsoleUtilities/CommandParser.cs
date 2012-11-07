@@ -11,7 +11,6 @@ namespace TheObtuseAngle.ConsoleUtilities
     public class CommandParser
     {
         private readonly TextWriter output;
-        private readonly ParseOptions parseOptions;
         private bool quietMode;
 
         public CommandParser()
@@ -26,10 +25,12 @@ namespace TheObtuseAngle.ConsoleUtilities
                 parseOptions = ParseOptions.Defaults;
             }
 
-            this.parseOptions = parseOptions;
             this.output = parseOptions.OutputWriter;
+            ParseOptions = parseOptions;
             ConsoleHelper.Initialize(output);
         }
+
+        public ParseOptions ParseOptions { get; set; }
 
         public virtual ParseResult ParseArguments(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
         {
@@ -38,19 +39,28 @@ namespace TheObtuseAngle.ConsoleUtilities
                 throw new ArgumentNullException("possibleArguments");
             }
 
-            if (consoleArgs.HasArgument(parseOptions.DebugFlag))
+            if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
             {
                 HandleDebugFlag();
             }
 
             var argList = possibleArguments.ToList();
-            argList.AddRange(new[] { Argument.QuietModeArgument, Argument.HelpArgument });
-            quietMode = consoleArgs.HasArgument(Argument.QuietModeArgument);
 
-            if (consoleArgs.HasArgument(Argument.HelpArgument))
+            if (ParseOptions.DisplayHelpArgument != null)
             {
-                WriteUsage(argList);
-                return ParseResult.DisplayedHelp;
+                if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
+                {
+                    WriteUsage(argList);
+                    return ParseResult.DisplayedHelp;
+                }
+
+                argList.Add(ParseOptions.DisplayHelpArgument);
+            }
+            
+            if (ParseOptions.QuietModeArgument != null)
+            {
+                argList.Add(ParseOptions.QuietModeArgument);
+                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
             }
 
             var parseResult = ParseArgumentsInternal(consoleArgs, argList);
@@ -64,17 +74,26 @@ namespace TheObtuseAngle.ConsoleUtilities
                 throw new ArgumentNullException("possibleCommands");
             }
 
-            if (consoleArgs.HasArgument(parseOptions.DebugFlag))
+            if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
             {
                 HandleDebugFlag();
             }
 
             var commands = possibleCommands.ToList();
-            commands.Add(new HelpCommand(possibleCommands, output, WriteCommandUsage));
-            quietMode = consoleArgs.HasArgument(Argument.QuietModeArgument);
+            commands.Add(new HelpCommand(commands, output, WriteCommandUsage));
+
+            if (ParseOptions.QuietModeArgument != null)
+            {
+                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
+            }
 
             if (consoleArgs.Length == 0)
             {
+                if (ParseOptions.AllowNoMatchingCommands)
+                {
+                    return CommandParseResult.NoMatchFound;
+                }
+
                 WriteLine("No arguments given.");
                 WriteUsage(commands);
                 return CommandParseResult.Failure;
@@ -84,13 +103,23 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (command == null)
             {
+                if (ParseOptions.AllowNoMatchingCommands)
+                {
+                    if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
+                    {
+                        WriteUsage(commands);
+                        return CommandParseResult.DisplayedHelp;
+                    }
+                    return CommandParseResult.NoMatchFound;
+                }
+
                 WriteLine("Invalid command.");
                 WriteUsage(commands);
                 return CommandParseResult.Failure;
             }
 
             var parseResult = ParseArgumentsInternal(consoleArgs, command.Arguments);
-            var hasHelpArg = consoleArgs.HasArgument(Argument.HelpArgument);
+            var hasHelpArg = ParseOptions.DisplayHelpArgument != null && consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument);
 
             if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
             {
@@ -110,7 +139,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return result.ParseResult;
             }
 
-            if (parseOptions.ThrowOnParseAndExecuteException)
+            if (ParseOptions.ThrowOnParseAndExecuteException)
             {
                 result.Command.Execute();
                 return ParseResult.Success;
@@ -164,7 +193,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (writePrefix)
             {
-                offsetOverride = 7;
+                offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
                 spacer = string.Empty;
                 output.WriteLine();
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
@@ -182,7 +211,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                 foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired))
                 {
-                    argumentUsageBuilder.Append(GetArgumentUsageString(argument, true));
+                    argumentUsageBuilder.Append(GetArgumentUsageString(argument));
                     argumentUsageBuilder.Append(' ');
                 }
 
@@ -208,56 +237,65 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (writePrefix)
             {
-                offsetOverride = 7;
+                offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName); 
             }
 
             foreach (var arg in orderedArgs)
             {
-                int length = arg.RequiresValue ? arg.Name.Length + parseOptions.ArgumentValueIndicator.Length + 1 : arg.Name.Length;
+                int length = arg.RequiresValue ? arg.Name.Length + ParseOptions.ArgumentValueIndicator.Length + 1 : arg.Name.Length;
                 maxNameLength = length > maxNameLength ? length : maxNameLength;
                 hasRequiredArgs = hasRequiredArgs || arg.IsRequired;
-                argumentUsageBuilder.Append(GetArgumentUsageString(arg, false));
+                argumentUsageBuilder.Append(GetArgumentUsageString(arg));
                 argumentUsageBuilder.Append(' ');
             }
 
             output.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
             output.WriteLine();
             output.WriteLine();
-            formatBuilder.Append(hasRequiredArgs ? string.Format("{{0,-{0}}}", parseOptions.RequiredArgumentIndicator.Length) : "{0}");
-            formatBuilder.AppendFormat("{{1,-{0}}} - ", maxNameLength);
+            formatBuilder.Append(hasRequiredArgs ? string.Format("{{0,-{0}}}", ParseOptions.RequiredArgumentIndicator.Length) : "{0}");
+            formatBuilder.AppendFormat("{{1,-{0}}}", maxNameLength);
             string format = formatBuilder.ToString();
 
             foreach (var arg in orderedArgs)
             {
-                var description = string.IsNullOrWhiteSpace(arg.Alias)
-                    ? arg.Description
-                    : string.Format("{0} (alias: {1})", arg.Description, arg.Alias);
+                var aliases = arg.Aliases.IsEmpty() ? new List<string>() : arg.Aliases.Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
+                bool hasDescription = !string.IsNullOrWhiteSpace(arg.Description);
+                bool hasAliases = aliases.Count > 0;
+                var descriptionBuilder = new StringBuilder();
+
+                if (hasDescription || hasAliases)
+                {
+                    descriptionBuilder.Append(" -");
+
+                    if (hasDescription)
+                    {
+                        descriptionBuilder.Append(' ');
+                        descriptionBuilder.Append(arg.Description);
+                    }
+                    if (hasAliases)
+                    {
+                        descriptionBuilder.AppendFormat(" (alias{0}: {1})", aliases.Count > 1 ? "es" : string.Empty, string.Join(", ", aliases));
+                    }
+                }
 
                 output.Write(format,
-                    arg.IsRequired ? parseOptions.RequiredArgumentIndicator : string.Empty,
-                    arg.RequiresValue ? string.Format("{0}{1}{2}", arg.Name, parseOptions.ArgumentValueSeparator, parseOptions.ArgumentValueIndicator) : arg.Name);
+                    arg.IsRequired ? ParseOptions.RequiredArgumentIndicator : string.Empty,
+                    arg.RequiresValue ? string.Format("{0}{1}{2}", arg.Name, ParseOptions.ArgumentValueSeparator, ParseOptions.ArgumentValueIndicator) : arg.Name);
 
-                output.WriteWrapped(description);
+                output.WriteWrapped(descriptionBuilder.ToString(), Console.CursorLeft + 3); // 3 = The length of the description prefix, " - "
                 output.WriteLine();
             }
         }
 
-        protected virtual string GetArgumentUsageString(IArgument argument, bool useRequiredFormatter)
+        protected virtual string GetArgumentUsageString(IArgument argument)
         {
-            if (argument.IsRequired)
-            {
-                return useRequiredFormatter ? string.Format(parseOptions.RequiredArgumentFormat, argument.Name) : argument.Name;
-            }
-            else
-            {
-                return string.Format(parseOptions.OptionalArgumentFormat, argument.Name);
-            }
+            return string.Format(argument.IsRequired ? ParseOptions.RequiredArgumentFormat : ParseOptions.OptionalArgumentFormat, argument.Name);
         }
 
         protected virtual void WriteException(Exception exception)
         {
-            if (!quietMode && parseOptions.WriteExceptionsToConsole)
+            if (!quietMode && ParseOptions.WriteExceptionsToConsole)
             {
                 exception.WriteToConsole();
             }
@@ -281,15 +319,10 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private ArgumentParseResult ParseArgumentsInternal(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
         {
-            if (consoleArgs.Length == 0)
-            {
-                return new ArgumentParseResult(hasNoConsoleArgs: false);
-            }
-
             var args = possibleArguments.ToList();
             var parsedArgs = new List<IArgument>();
 
-            if (args.HasDuplicates(a => a.Name) || args.HasDuplicates(a => a.Alias))
+            if (args.HasDuplicates(true, a => a.Name) || args.SelectMany(a => a.Aliases).HasDuplicates(true))
             {
                 throw new ArgumentException("Duplicate arguments detected.", "possibleArguments");
             }
@@ -298,21 +331,24 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 string argName;
                 string argValue;
+                bool needsIncrement = false;
 
-                if (parseOptions.ArgumentValueSeparator == ' ')
+                if (ParseOptions.ArgumentValueSeparator == ' ')
                 {
                     argName = consoleArgs[i];
                     argValue = i + 1 < consoleArgs.Length ? consoleArgs[i + 1] : null;
-                    i++;
+                    needsIncrement = true;
                 }
                 else
                 {
-                    var argParts = consoleArgs[i].Split(new[] { parseOptions.ArgumentValueSeparator });
+                    var argParts = consoleArgs[i].Split(new[] { ParseOptions.ArgumentValueSeparator });
                     argName = argParts[0];
                     argValue = argParts.Length > 1 ? argParts[1] : null;
                 }
 
-                var matchingArg = args.FirstOrDefault(a => a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) || a.Alias.Equals(argName, StringComparison.InvariantCultureIgnoreCase));
+                var matchingArg = args.FirstOrDefault(a =>
+                    a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) ||
+                    (a.Aliases != null && a.Aliases.Any(alias => alias != null && alias.Equals(argName, StringComparison.InvariantCultureIgnoreCase))));
 
                 if (matchingArg == null)
                 {
@@ -326,7 +362,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                 if (matchingArg.ValueSetter != null)
                 {
-                    if (parseOptions.ThrowOnValueSetterException)
+                    if (ParseOptions.ThrowOnValueSetterException)
                     {
                         matchingArg.SetValue(argValue);
                     }
@@ -344,6 +380,11 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
 
                 parsedArgs.Add(matchingArg);
+
+                if (needsIncrement)
+                {
+                    i++;
+                }
             }
 
             var missingRequiredArgs = args.Where(a => a.IsRequired && !parsedArgs.Contains(a));
@@ -367,11 +408,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 string errorMessage;
 
-                if (parseResult.HasNoConsoleArgs)
-                {
-                    errorMessage = "No arguments given.";
-                }
-                else if (parseResult.ArgumentWithMissingValue != null)
+                if (parseResult.ArgumentWithMissingValue != null)
                 {
                     errorMessage = string.Format("Missing argument value for '{0}'.", parseResult.ArgumentWithMissingValue.Name);
                 }
@@ -390,7 +427,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                 output.WriteLine(errorMessage);
 
-                if (parseOptions.WriteExceptionsToConsole && parseResult.ArgumentValueSetterExceptionPair != null)
+                if (ParseOptions.WriteExceptionsToConsole && parseResult.ArgumentValueSetterExceptionPair != null)
                 {
                     parseResult.ArgumentValueSetterExceptionPair.Item2.WriteToConsole();
                 }
@@ -406,20 +443,22 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private void HandleDebugFlag()
         {
-            if (!parseOptions.EnableDebugFlag)
+            if (!ParseOptions.EnableDebugFlag)
             {
                 return;
             }
 
-            switch (parseOptions.DebugFlagAction)
+            switch (ParseOptions.DebugFlagAction)
             {
+                case DebugFlagAction.None:
+                    return;
                 case DebugFlagAction.DebuggerLaunch:
                     Debugger.Launch();
                     break;
                 case DebugFlagAction.ThreadSleep:
                     output.WriteLine("Pausing for 10 seconds to allow you to attach to the process...");
                     Thread.Sleep(TimeSpan.FromSeconds(10));
-                    break;
+                    break;                
             }
         }
     }

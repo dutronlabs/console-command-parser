@@ -5,6 +5,7 @@ namespace TheObtuseAngle.ConsoleUtilities
     {
         Success,
         Failure,
-        DisplayedHelp
+        DisplayedHelp,
+        NoMatchFound
     }
 }

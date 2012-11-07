@@ -6,7 +6,7 @@ namespace TheObtuseAngle.ConsoleUtilities
     {
         string Name { get; set; }
 
-        string Alias { get; set; }
+        string[] Aliases { get; set; }
 
         string Description { get; set; }
 

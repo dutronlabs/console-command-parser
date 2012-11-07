@@ -5,13 +5,17 @@ namespace TheObtuseAngle.ConsoleUtilities
 {
     public enum DebugFlagAction
     {
+        None,
         DebuggerLaunch,
         ThreadSleep
     }
 
     public sealed class ParseOptions
     {
+        private static readonly IArgument quietModeArgument = new Argument("-quiet", "-q", "Suppresses all output", false, false, null);
+        private static readonly IArgument displayHelpArgument = new Argument("-help", "/?", "Displays this usage information", false, false, null);
         public static readonly ParseOptions Defaults = new ParseOptions();
+
         private const char defaultArgumentValueSeparator = ' ';
         private const string defaultArgumentValueIndicator = "<value>";
         private const string defaultRequiredArgumentIndicator = "(*) ";
@@ -22,6 +26,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         public ParseOptions()
         {
             ArgumentValueSeparator = defaultArgumentValueSeparator;
+            AllowNoMatchingCommands = false;
             ThrowOnValueSetterException = true;
             ThrowOnParseAndExecuteException = true;
             EnableValueOnlyParsing = false;
@@ -32,6 +37,8 @@ namespace TheObtuseAngle.ConsoleUtilities
             OptionalArgumentFormat = defaultOptionalArgumentFormat;
             DebugFlagAction = TheObtuseAngle.ConsoleUtilities.DebugFlagAction.DebuggerLaunch;
             DebugFlag = defaultDebugFlag;
+            QuietModeArgument = quietModeArgument;
+            DisplayHelpArgument = displayHelpArgument;
 #if DEBUG
             WriteExceptionsToConsole = true;
             EnableDebugFlag = true;
@@ -42,6 +49,8 @@ namespace TheObtuseAngle.ConsoleUtilities
         }
 
         public char ArgumentValueSeparator { get; set; }
+
+        public bool AllowNoMatchingCommands { get; set; }
 
         public bool ThrowOnValueSetterException { get; set; }
 
@@ -66,6 +75,10 @@ namespace TheObtuseAngle.ConsoleUtilities
         public DebugFlagAction DebugFlagAction { get; set; }
 
         public string DebugFlag { get; set; }
+
+        public IArgument DisplayHelpArgument { get; set; }
+
+        public IArgument QuietModeArgument { get; set; }
 
         internal bool IsUsingConsoleOutput
         {
