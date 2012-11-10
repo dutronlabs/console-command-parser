@@ -341,20 +341,26 @@ namespace TheObtuseAngle.ConsoleUtilities
             for (int i = 0; i < consoleArgs.Length; i++)
             {
                 string argName;
-                string argValue;
+                string argValue = null;
                 bool needsIncrement = false;
+                Func<string> argValueProducer;
 
                 if (ParseOptions.ArgumentValueSeparator == ' ')
                 {
+                    int index = i;
                     argName = consoleArgs[i];
-                    argValue = i + 1 < consoleArgs.Length ? consoleArgs[i + 1] : null;
-                    needsIncrement = true;
+                    argValueProducer =
+                        () =>
+                        {
+                            needsIncrement = true;
+                            return index + 1 < consoleArgs.Length ? consoleArgs[index + 1] : null;
+                        };
                 }
                 else
                 {
-                    var argParts = consoleArgs[i].Split(new[] { ParseOptions.ArgumentValueSeparator });
+                    var argParts = consoleArgs[i].Split(ParseOptions.ArgumentValueSeparator);
                     argName = argParts[0];
-                    argValue = argParts.Length > 1 ? argParts[1] : null;
+                    argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
                 }
 
                 var matchingArg = args.FirstOrDefault(a =>
@@ -366,9 +372,14 @@ namespace TheObtuseAngle.ConsoleUtilities
                     continue;
                 }
 
-                if (matchingArg.RequiresValue && string.IsNullOrWhiteSpace(argValue))
+                if (matchingArg.RequiresValue)
                 {
-                    return new ArgumentParseResult(matchingArg);
+                    argValue = argValueProducer();
+
+                    if (string.IsNullOrWhiteSpace(argValue))
+                    {
+                        return new ArgumentParseResult(matchingArg);
+                    }
                 }
 
                 if (matchingArg.ValueSetter != null)
