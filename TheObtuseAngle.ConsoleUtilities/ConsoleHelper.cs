@@ -53,7 +53,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 int subsequentLineLength = Console.BufferWidth - position - 1;
                 var lineBuilder = new StringBuilder();
 
-                foreach (var word in textToWrap.Split(new[] { ' ' }))
+                foreach (var word in textToWrap.Split(' '))
                 {
                     if (lineBuilder.Length + word.Length + 1 > lineLength)
                     {

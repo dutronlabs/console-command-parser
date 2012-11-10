@@ -209,7 +209,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (writeArgumentDetails)
             {
-                WriteUsage(command.Arguments, false);
+                WriteUsage(command.Arguments, false, offsetOverride);
             }
             else
             {
@@ -232,14 +232,13 @@ namespace TheObtuseAngle.ConsoleUtilities
             WriteUsage(arguments, true);
         }
 
-        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix)
+        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix, int? offsetOverride = null)
         {
             if (quietMode)
             {
                 return;
             }
 
-            int? offsetOverride = null;
             int maxNameLength = 0;
             bool hasRequiredArgs = false;
             var formatBuilder = new StringBuilder(" ");
@@ -248,7 +247,10 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (writePrefix)
             {
-                offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
+                if (!offsetOverride.HasValue)
+                {
+                    offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
+                }
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName); 
             }
 
