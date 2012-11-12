@@ -53,13 +53,10 @@ namespace TheObtuseAngle.ConsoleUtilities
                     WriteUsage(argList);
                     return ParseResult.DisplayedHelp;
                 }
-
-                argList.Add(ParseOptions.DisplayHelpArgument);
             }
             
             if (ParseOptions.QuietModeArgument != null)
             {
-                argList.Add(ParseOptions.QuietModeArgument);
                 quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
             }
 
@@ -103,13 +100,14 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             if (command == null)
             {
+                if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
+                {
+                    WriteUsage(commands);
+                    return CommandParseResult.DisplayedHelp;
+                }
+
                 if (ParseOptions.AllowNoMatchingCommands)
                 {
-                    if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
-                    {
-                        WriteUsage(commands);
-                        return CommandParseResult.DisplayedHelp;
-                    }
                     return CommandParseResult.NoMatchFound;
                 }
 
@@ -239,10 +237,20 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
+            var argList = arguments.ToList();
+            if (ParseOptions.DisplayHelpArgument != null && !argList.Contains(ParseOptions.DisplayHelpArgument))
+            {
+                argList.Add(ParseOptions.DisplayHelpArgument);
+            }
+            if (ParseOptions.QuietModeArgument != null && !argList.Contains(ParseOptions.QuietModeArgument))
+            {
+                argList.Add(ParseOptions.QuietModeArgument);
+            }
+
             int maxNameLength = 0;
             bool hasRequiredArgs = false;
             var formatBuilder = new StringBuilder(" ");
-            var orderedArgs = arguments.OrderByDescending(a => a.IsRequired).ToList();
+            var orderedArgs = argList.OrderByDescending(a => a.IsRequired).ToList();
             var argumentUsageBuilder = new StringBuilder();
 
             if (writePrefix)
