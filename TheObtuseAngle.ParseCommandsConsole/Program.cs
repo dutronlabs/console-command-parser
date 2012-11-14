@@ -27,6 +27,7 @@ namespace TheObtuseAngle.ParseCommandsConsole
             this.commands = new ICommand[]
             {
                 new AddUserCommand(),
+                new AddUsersCommand(),
                 new ListUsersCommand(),
                 new LoginCommand()
             };
@@ -37,7 +38,6 @@ namespace TheObtuseAngle.ParseCommandsConsole
             try
             {
                 var parserOptions = new ParseOptions();
-                parserOptions.ArgumentValueSeparator = '=';
                 parserOptions.DebugFlagAction = DebugFlagAction.ThreadSleep;
                 var parser = new CommandParser(parserOptions);
                 var result = parser.ParseCommandAndExecute(consoleArgs, commands);
@@ -70,6 +70,68 @@ namespace TheObtuseAngle.ParseCommandsConsole
         {
             Console.WriteLine("Adding user:{0}  Username: {1}{0}  Password: {2}{0}  Nickname: {3}", Environment.NewLine, userName, password, nickname);
             return true;
+        }
+    }
+
+    public class AddUsersCommand : CommandBase
+    {
+        private readonly List<User> users = new List<User>();
+        private bool hasValidUsers = true;
+
+        public AddUsersCommand()
+            : base("AddUsers", "Adds multiple users to the user store")
+        {
+            this.Arguments.Add(new Argument("-user", "-u", "The definition of a new user. ex) -u userName|password|nickname", true, true, ParseUser));
+        }
+
+        private void ParseUser(string userArgs)
+        {
+            if (string.IsNullOrWhiteSpace(userArgs))
+            {
+                hasValidUsers = false;
+                return;
+            }
+
+            var userParts = userArgs.Split('|');
+
+            if (userParts.Length < 2)
+            {
+                hasValidUsers = false;
+                return;
+            }
+
+            var user = new User
+                {
+                    UserName = userParts[0],
+                    Password = userParts[1],
+                    Nickname = userParts.Length >= 3 ? userParts[2] : string.Empty
+                };
+            users.Add(user);
+        }
+
+        public override bool Execute()
+        {
+            if (!hasValidUsers)
+            {
+                Console.WriteLine("There are some invalid args.");
+                return false;
+            }
+
+            foreach (var user in users)
+            {
+                Console.WriteLine("  Adding user:  Username: '{0}'  Password: '{1}'  Nickname: '{2}'", user.UserName, user.Password, user.Nickname);
+            }
+
+            return true;
+        }
+
+        private class User
+        {
+            public string UserName { get; set; }
+
+            public string Password { get; set; }
+
+            public string Nickname { get; set; }
         }
     }
 

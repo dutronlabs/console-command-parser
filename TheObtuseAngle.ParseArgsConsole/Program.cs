@@ -33,7 +33,6 @@ namespace TheObtuseAngle.ParseArgsConsole
             try
             {
                 var parserOptions = new ParseOptions();
-                parserOptions.ArgumentValueSeparator = '=';
                 parserOptions.DebugFlagAction = DebugFlagAction.ThreadSleep;
                 var parser = new CommandParser(parserOptions);
 

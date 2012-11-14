@@ -44,13 +44,11 @@ namespace TheObtuseAngle.ConsoleUtilities
                 HandleDebugFlag();
             }
 
-            var argList = possibleArguments.ToList();
-
             if (ParseOptions.DisplayHelpArgument != null)
             {
                 if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
                 {
-                    WriteUsage(argList);
+                    WriteUsage(possibleArguments);
                     return ParseResult.DisplayedHelp;
                 }
             }
@@ -60,8 +58,8 @@ namespace TheObtuseAngle.ConsoleUtilities
                 quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
             }
 
-            var parseResult = ParseArgumentsInternal(consoleArgs, argList);
-            return ProcessArgumentParseResult(parseResult, argList, true);
+            var parseResult = ParseArgumentsInternal(consoleArgs, possibleArguments);
+            return ProcessArgumentParseResult(parseResult, possibleArguments, true);
         }
 
         public virtual CommandParseResult ParseCommand(string[] consoleArgs, IEnumerable<ICommand> possibleCommands)
@@ -76,9 +74,6 @@ namespace TheObtuseAngle.ConsoleUtilities
                 HandleDebugFlag();
             }
 
-            var commands = possibleCommands.ToList();
-            commands.Add(new HelpCommand(commands, output, WriteUsage));
-
             if (ParseOptions.QuietModeArgument != null)
             {
                 quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
@@ -92,17 +87,19 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
 
                 WriteLine("No arguments given.");
-                WriteUsage(commands);
+                WriteUsage(possibleCommands);
                 return CommandParseResult.Failure;
             }
 
-            var command = commands.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
+            var commandsToSearch = possibleCommands.ToList();
+            commandsToSearch.Add(new HelpCommand(commandsToSearch, output, WriteUsage));
+            var command = commandsToSearch.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
 
             if (command == null)
             {
                 if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
                 {
-                    WriteUsage(commands);
+                    WriteUsage(possibleCommands);
                     return CommandParseResult.DisplayedHelp;
                 }
 
@@ -112,7 +109,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
 
                 WriteLine("Invalid command.");
-                WriteUsage(commands);
+                WriteUsage(possibleCommands);
                 return CommandParseResult.Failure;
             }
 
@@ -163,12 +160,13 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
-            var commandList = commands.ToList();
+            var commandList = commands.OrderBy(c => c.Name).ToList();
             if (!commandList.Any(c => c.Name.Equals(HelpCommand.HelpCommandName) && c.Description.Equals(HelpCommand.HelpCommandDescription)))
             {
                 commandList.Add(new HelpCommand(commands, output, WriteUsage));
             }
 
+            int maxCommandNameLength = commandList.Max(c => c.Name.Length);
             output.WriteLine();
             output.WriteLine("Usage: {0} <COMMAND>", AppDomain.CurrentDomain.FriendlyName);
             output.WriteLine();
@@ -176,7 +174,8 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             foreach (var command in commandList)
             {
-                WriteUsage(command, false, false);
+                WriteUsage(command, false, false, maxCommandNameLength);
+                output.WriteLine();
             }
         }
 
@@ -185,7 +184,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             WriteUsage(command, true, true);
         }
 
-        protected virtual void WriteUsage(ICommand command, bool writePrefix, bool writeArgumentDetails)
+        protected virtual void WriteUsage(ICommand command, bool writePrefix, bool writeArgumentDetails, int? maxCommandNameLength = null)
         {
             if (quietMode)
             {
@@ -203,7 +202,8 @@ namespace TheObtuseAngle.ConsoleUtilities
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
             }
 
-            output.Write("{0}{1} ", spacer, command.Name);
+            var formatString = maxCommandNameLength.HasValue ? string.Format("{{0}}{{1,-{0}}} ", maxCommandNameLength.Value) : "{0}{1} ";
+            output.Write(formatString, spacer, command.Name);
 
             if (writeArgumentDetails)
             {
@@ -213,7 +213,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 var argumentUsageBuilder = new StringBuilder();
 
-                foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired))
+                foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name))
                 {
                     argumentUsageBuilder.Append(GetArgumentUsageString(argument));
                     argumentUsageBuilder.Append(' ');
@@ -237,7 +237,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
-            var argList = arguments.ToList();
+            var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name).ToList();
             if (ParseOptions.DisplayHelpArgument != null && !argList.Contains(ParseOptions.DisplayHelpArgument))
             {
                 argList.Add(ParseOptions.DisplayHelpArgument);
@@ -250,7 +250,6 @@ namespace TheObtuseAngle.ConsoleUtilities
             int maxNameLength = 0;
             bool hasRequiredArgs = false;
             var formatBuilder = new StringBuilder(" ");
-            var orderedArgs = argList.OrderByDescending(a => a.IsRequired).ToList();
             var argumentUsageBuilder = new StringBuilder();
 
             if (writePrefix)
@@ -262,7 +261,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName); 
             }
 
-            foreach (var arg in orderedArgs)
+            foreach (var arg in argList)
             {
                 int length = arg.RequiresValue ? arg.Name.Length + ParseOptions.ArgumentValueIndicator.Length + 1 : arg.Name.Length;
                 maxNameLength = length > maxNameLength ? length : maxNameLength;
@@ -278,7 +277,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             formatBuilder.AppendFormat("{{1,-{0}}}", maxNameLength);
             string format = formatBuilder.ToString();
 
-            foreach (var arg in orderedArgs)
+            foreach (var arg in argList)
             {
                 var aliases = arg.Aliases.IsEmpty() ? new List<string>() : arg.Aliases.Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
                 bool hasDescription = !string.IsNullOrWhiteSpace(arg.Description);
@@ -340,10 +339,9 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private ArgumentParseResult ParseArgumentsInternal(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
         {
-            var args = possibleArguments.ToList();
             var parsedArgs = new List<IArgument>();
 
-            if (args.HasDuplicates(true, a => a.Name) || args.SelectMany(a => a.Aliases).HasDuplicates(true))
+            if (possibleArguments.HasDuplicates(true, a => a.Name) || possibleArguments.SelectMany(a => a.Aliases).HasDuplicates(true))
             {
                 throw new ArgumentException("Duplicate arguments detected.", "possibleArguments");
             }
@@ -373,7 +371,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                     argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
                 }
 
-                var matchingArg = args.FirstOrDefault(a =>
+                var matchingArg = possibleArguments.FirstOrDefault(a =>
                     a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) ||
                     (a.Aliases != null && a.Aliases.Any(alias => alias != null && alias.Equals(argName, StringComparison.InvariantCultureIgnoreCase))));
 
@@ -419,7 +417,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
-            var missingRequiredArgs = args.Where(a => a.IsRequired && !parsedArgs.Contains(a));
+            var missingRequiredArgs = possibleArguments.Where(a => a.IsRequired && !parsedArgs.Contains(a));
 
             if (missingRequiredArgs.Any())
             {
