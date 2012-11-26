@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace TheObtuseAngle.ConsoleUtilities
@@ -73,6 +75,96 @@ namespace TheObtuseAngle.ConsoleUtilities
                     output.Write(lineBuilder.ToString());
                 }
             }
+        }
+
+        public static ArgumentParseResult ParseArguments(string[] consoleArgs, ParseOptions parseOptions, params IArgument[] possibleArguments)
+        {
+            var parsedArgs = new List<IArgument>();
+
+            if (possibleArguments.HasDuplicates(true, a => a.Name) || possibleArguments.SelectMany(a => a.Aliases).HasDuplicates(true))
+            {
+                throw new ArgumentException("Duplicate arguments detected.", "possibleArguments");
+            }
+
+            for (int i = 0; i < consoleArgs.Length; i++)
+            {
+                string argName;
+                string argValue = null;
+                bool needsIncrement = false;
+                Func<string> argValueProducer;
+
+                if (parseOptions.ArgumentValueSeparator == ' ')
+                {
+                    int index = i;
+                    argName = consoleArgs[i];
+                    argValueProducer =
+                        () =>
+                        {
+                            needsIncrement = true;
+                            return index + 1 < consoleArgs.Length ? consoleArgs[index + 1] : null;
+                        };
+                }
+                else
+                {
+                    var argParts = consoleArgs[i].Split(parseOptions.ArgumentValueSeparator);
+                    argName = argParts[0];
+                    argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
+                }
+
+                var matchingArg = possibleArguments.FirstOrDefault(a =>
+                    a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) ||
+                    (a.Aliases != null && a.Aliases.Any(alias => alias != null && alias.Equals(argName, StringComparison.InvariantCultureIgnoreCase))));
+
+                if (matchingArg == null)
+                {
+                    continue;
+                }
+
+                if (matchingArg.RequiresValue)
+                {
+                    argValue = argValueProducer();
+
+                    if (string.IsNullOrWhiteSpace(argValue))
+                    {
+                        return new ArgumentParseResult(matchingArg);
+                    }
+                }
+
+                if (matchingArg.ValueSetter != null)
+                {
+                    if (parseOptions.ThrowOnValueSetterException)
+                    {
+                        matchingArg.ValueSetter(argValue);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            matchingArg.ValueSetter(argValue);
+                        }
+                        catch (Exception valueSetterException)
+                        {
+                            return new ArgumentParseResult(new Tuple<IArgument, Exception>(matchingArg, valueSetterException));
+                        }
+                    }
+                }
+
+                parsedArgs.Add(matchingArg);
+
+                if (needsIncrement)
+                {
+                    i++;
+                }
+            }
+
+            var missingRequiredArgs = possibleArguments.Where(a => a.IsRequired && !parsedArgs.Contains(a));
+
+            if (missingRequiredArgs.Any())
+            {
+                return new ArgumentParseResult(missingRequiredArgs);
+            }
+
+            return ArgumentParseResult.Success;
         }
     }
 }

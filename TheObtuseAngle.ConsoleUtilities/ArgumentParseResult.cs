@@ -3,9 +3,11 @@ using System.Collections.Generic;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
-    internal class ArgumentParseResult
+    public class ArgumentParseResult
     {
-        public ArgumentParseResult()
+        public static ArgumentParseResult Success = new ArgumentParseResult();
+
+        private ArgumentParseResult()
         {
             IsSuccess = true;
         }

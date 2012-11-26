@@ -95,10 +95,5 @@ namespace TheObtuseAngle.ConsoleUtilities
             get { return this.valueSetter; }
             set { this.valueSetter = value; }
         }
-
-        public void SetValue(string value)
-        {
-            this.valueSetter(value);
-        }
     }
 }

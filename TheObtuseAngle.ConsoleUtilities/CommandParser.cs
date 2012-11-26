@@ -39,6 +39,8 @@ namespace TheObtuseAngle.ConsoleUtilities
                 throw new ArgumentNullException("possibleArguments");
             }
 
+            var argumentArray = possibleArguments.ToArray();
+
             if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
             {
                 HandleDebugFlag();
@@ -48,7 +50,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
                 {
-                    WriteUsage(possibleArguments);
+                    WriteUsage(argumentArray);
                     return ParseResult.DisplayedHelp;
                 }
             }
@@ -58,8 +60,8 @@ namespace TheObtuseAngle.ConsoleUtilities
                 quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
             }
 
-            var parseResult = ParseArgumentsInternal(consoleArgs, possibleArguments);
-            return ProcessArgumentParseResult(parseResult, possibleArguments, true);
+            var parseResult = consoleArgs.ParseArguments(ParseOptions, argumentArray);
+            return ProcessArgumentParseResult(parseResult, argumentArray, true);
         }
 
         public virtual CommandParseResult ParseCommand(string[] consoleArgs, IEnumerable<ICommand> possibleCommands)
@@ -113,7 +115,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return CommandParseResult.Failure;
             }
 
-            var parseResult = ParseArgumentsInternal(consoleArgs, command.Arguments);
+            var parseResult = consoleArgs.ParseArguments(ParseOptions, command.Arguments.ToArray());
             var hasHelpArg = ParseOptions.DisplayHelpArgument != null && consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument);
 
             if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
@@ -335,96 +337,6 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 output.WriteLine(format, args);
             }
-        }
-
-        private ArgumentParseResult ParseArgumentsInternal(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
-        {
-            var parsedArgs = new List<IArgument>();
-
-            if (possibleArguments.HasDuplicates(true, a => a.Name) || possibleArguments.SelectMany(a => a.Aliases).HasDuplicates(true))
-            {
-                throw new ArgumentException("Duplicate arguments detected.", "possibleArguments");
-            }
-
-            for (int i = 0; i < consoleArgs.Length; i++)
-            {
-                string argName;
-                string argValue = null;
-                bool needsIncrement = false;
-                Func<string> argValueProducer;
-
-                if (ParseOptions.ArgumentValueSeparator == ' ')
-                {
-                    int index = i;
-                    argName = consoleArgs[i];
-                    argValueProducer =
-                        () =>
-                        {
-                            needsIncrement = true;
-                            return index + 1 < consoleArgs.Length ? consoleArgs[index + 1] : null;
-                        };
-                }
-                else
-                {
-                    var argParts = consoleArgs[i].Split(ParseOptions.ArgumentValueSeparator);
-                    argName = argParts[0];
-                    argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
-                }
-
-                var matchingArg = possibleArguments.FirstOrDefault(a =>
-                    a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) ||
-                    (a.Aliases != null && a.Aliases.Any(alias => alias != null && alias.Equals(argName, StringComparison.InvariantCultureIgnoreCase))));
-
-                if (matchingArg == null)
-                {
-                    continue;
-                }
-
-                if (matchingArg.RequiresValue)
-                {
-                    argValue = argValueProducer();
-
-                    if (string.IsNullOrWhiteSpace(argValue))
-                    {
-                        return new ArgumentParseResult(matchingArg);
-                    }
-                }
-
-                if (matchingArg.ValueSetter != null)
-                {
-                    if (ParseOptions.ThrowOnValueSetterException)
-                    {
-                        matchingArg.SetValue(argValue);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            matchingArg.SetValue(argValue);
-                        }
-                        catch (Exception valueSetterException)
-                        {
-                            return new ArgumentParseResult(new Tuple<IArgument, Exception>(matchingArg, valueSetterException));
-                        }
-                    } 
-                }
-
-                parsedArgs.Add(matchingArg);
-
-                if (needsIncrement)
-                {
-                    i++;
-                }
-            }
-
-            var missingRequiredArgs = possibleArguments.Where(a => a.IsRequired && !parsedArgs.Contains(a));
-
-            if (missingRequiredArgs.Any())
-            {
-                return new ArgumentParseResult(missingRequiredArgs);
-            }
-
-            return new ArgumentParseResult();
         }
 
         private ParseResult ProcessArgumentParseResult(ArgumentParseResult parseResult, IEnumerable<IArgument> possibleArguments, bool writeUsage)

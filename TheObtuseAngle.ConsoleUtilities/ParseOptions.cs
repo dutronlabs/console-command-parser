@@ -12,7 +12,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
     public sealed class ParseOptions
     {
-        private static readonly IArgument quietModeArgument = new Argument("-quiet", "-q", "Suppresses all output", false, false, null);
+        private static readonly IArgument quietModeArgument = new Argument("-quiet", new[] { "-q", "/q" }, "Suppresses all output", false, false, null);
         private static readonly IArgument displayHelpArgument = new Argument("-help", new[] { "-?", "/?" }, "Displays this usage information", false, false, null);
         public static readonly ParseOptions Defaults = new ParseOptions();
 

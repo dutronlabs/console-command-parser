@@ -30,5 +30,15 @@ namespace TheObtuseAngle.ConsoleUtilities
         {
             ConsoleHelper.WriteWrapped(output, textToWrap, offsetOverride);
         }
+
+        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, params IArgument[] possibleArguments)
+        {
+            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, possibleArguments);
+        }
+
+        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, ParseOptions parseOptions, params IArgument[] possibleArguments)
+        {
+            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, possibleArguments);
+        }
     }
 }
