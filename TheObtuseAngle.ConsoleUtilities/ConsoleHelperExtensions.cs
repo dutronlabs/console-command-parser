@@ -18,7 +18,8 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static bool HasArgument(this string[] consoleArgs, IArgument arg)
         {
-            return consoleArgs != null && arg != null && consoleArgs.Any(a => a.Equals(arg.Name, StringComparison.InvariantCultureIgnoreCase) || arg.Aliases.Any(alias => alias.Equals(a, StringComparison.InvariantCultureIgnoreCase)));
+            return consoleArgs != null && arg != null &&
+                consoleArgs.Any(a => a.Equals(arg.Name, StringComparison.InvariantCultureIgnoreCase) || (arg.Aliases != null && arg.Aliases.Any(alias => alias.Equals(a, StringComparison.InvariantCultureIgnoreCase))));
         }
 
         public static bool HasArgument(this string[] args, string arg)
@@ -33,12 +34,22 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static ArgumentParseResult ParseArguments(this string[] consoleArgs, params IArgument[] possibleArguments)
         {
-            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, possibleArguments);
+            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, false, possibleArguments);
+        }
+
+        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, bool isInteractiveMode, params IArgument[] possibleArguments)
+        {
+            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, isInteractiveMode, possibleArguments);
         }
 
         public static ArgumentParseResult ParseArguments(this string[] consoleArgs, ParseOptions parseOptions, params IArgument[] possibleArguments)
         {
-            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, possibleArguments);
+            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, false, possibleArguments);
+        }
+
+        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, ParseOptions parseOptions, bool isInteractiveMode, params IArgument[] possibleArguments)
+        {
+            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, isInteractiveMode, possibleArguments);
         }
     }
 }

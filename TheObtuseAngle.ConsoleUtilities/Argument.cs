@@ -2,13 +2,8 @@
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
-    public class Argument : IArgument
+    public class Argument : ArgumentTemplate, IArgument
     {
-        private string name;
-        private string[] aliases;
-        private string description;
-        private bool isRequired;
-        private bool requiresValue;
         private Action<string> valueSetter;
 
         public Argument()
@@ -50,44 +45,15 @@ namespace TheObtuseAngle.ConsoleUtilities
         {
         }
 
+        public Argument(ArgumentTemplate template, Action<string> valueSetter)
+            : this(template.Name, template.Aliases, template.Description, template.RequiresValue, template.IsRequired, valueSetter)
+        {
+        }
+
         public Argument(string name, string[] aliases, string description, bool requiresValue, bool isRequired, Action<string> valueSetter)
+            : base(name, aliases, description, requiresValue, isRequired)
         {
-            this.name = name;
-            this.aliases = aliases;
-            this.description = description;
-            this.requiresValue = requiresValue;
-            this.isRequired = isRequired;
             this.valueSetter = valueSetter;
-        }
-
-        public virtual string Name
-        {
-            get { return this.name; }
-            set { this.name = value; }
-        }
-
-        public virtual string[] Aliases
-        {
-            get { return this.aliases; }
-            set { this.aliases = value; }
-        }
-
-        public virtual string Description
-        {
-            get { return description; }
-            set { description = value; }
-        }
-
-        public virtual bool RequiresValue
-        {
-            get { return this.requiresValue; }
-            set { this.requiresValue = value; }
-        }
-
-        public virtual bool IsRequired
-        {
-            get { return this.isRequired; }
-            set { this.isRequired = value; }
         }
 
         public virtual Action<string> ValueSetter

@@ -50,14 +50,33 @@ namespace TheObtuseAngle.ConsoleUtilities
     /// </summary>
     public sealed class ParseOptions
     {
-        private static readonly IArgument quietModeArgument = new Argument("-quiet", new[] { "-q", "/q" }, "Suppresses all output", false, false, null);
-        private static readonly IArgument displayHelpArgument = new Argument("-help", new[] { "-?", "/?" }, "Displays this usage information", false, false, null);
-        private const char defaultArgumentValueSeparator = ' ';
-        private const string defaultArgumentValueIndicator = "<value>";
-        private const string defaultRequiredArgumentIndicator = "(*) ";
-        private const string defaultRequiredArgumentFormat = "<{0}>";
-        private const string defaultOptionalArgumentFormat = "[{0}]";
-        private const string defaultDebugFlag = "--debug";
+        public const char DefaultArgumentValueSeparator = ' ';
+        public const string DefaultArgumentValueIndicator = "<value>";
+        public const string DefaultRequiredArgumentIndicator = "(*) ";
+        public const string DefaultRequiredArgumentFormat = "<{0}>";
+        public const string DefaultOptionalArgumentFormat = "[{0}]";
+        public const string DefaultDebugFlag = "--debug";
+
+        public static readonly ArgumentTemplate DefaultQuietModeArgumentTemplate = new ArgumentTemplate
+        {
+            Name = "-quiet",
+            Aliases = new[] { "-q", "/q" },
+            Description = "Suppresses all output"
+        };
+
+        public static readonly ArgumentTemplate DefaultHelpArgumentTemplate = new ArgumentTemplate
+        {
+            Name = "-help",
+            Aliases = new[] { "-?", "/?" },
+            Description = "Displays this usage information"
+        };
+
+        public static readonly ArgumentTemplate DefaultInteractiveModeArgumentTemplate = new ArgumentTemplate
+        {
+            Name = "-interactive",
+            Aliases = new[] { "-i" },
+            Description = "When provided, the user will be prompted for missing required arguments"
+        };
 
         public static readonly HelpCommandTemplate DefaultHelpCommandTemplate = new HelpCommandTemplate
         {
@@ -68,7 +87,9 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 Name = "-command",
                 Aliases = new[] { "-c" },
-                Description = "The name of the command to display help for"
+                Description = "The name of the command to display help for",
+                IsRequired = false,
+                RequiresValue = true
             }
         };
         
@@ -76,22 +97,23 @@ namespace TheObtuseAngle.ConsoleUtilities
         
         public ParseOptions()
         {
-            ArgumentValueSeparator = defaultArgumentValueSeparator;
+            ArgumentValueSeparator = DefaultArgumentValueSeparator;
             AllowNoMatchingCommands = false;
             ThrowOnValueSetterException = true;
             ThrowOnParseAndExecuteException = true;
             EnableValueOnlyParsing = false;
+            InvertInteractiveModeArgument = false;
             OutputWriter = Console.Out;
-            ArgumentValueIndicator = defaultArgumentValueIndicator;
-            RequiredArgumentIndicator = defaultRequiredArgumentIndicator;
-            RequiredArgumentFormat = defaultRequiredArgumentFormat;
-            OptionalArgumentFormat = defaultOptionalArgumentFormat;
+            ArgumentValueIndicator = DefaultArgumentValueIndicator;
+            RequiredArgumentIndicator = DefaultRequiredArgumentIndicator;
+            RequiredArgumentFormat = DefaultRequiredArgumentFormat;
+            OptionalArgumentFormat = DefaultOptionalArgumentFormat;
             DebugFlagAction = DebugFlagAction.DebuggerLaunch;
-            DebugFlag = defaultDebugFlag;
-            QuietModeArgument = quietModeArgument;
-            HelpArgument = displayHelpArgument;
+            DebugFlag = DefaultDebugFlag;
+            QuietModeArgumentTemplate = DefaultQuietModeArgumentTemplate;
+            HelpArgumentTemplate = DefaultHelpArgumentTemplate;
+            InteractiveModeArgumentTemplate = DefaultInteractiveModeArgumentTemplate;
             WriteUsageMode = WriteUsageMode.CommandNameAndArguments;
-            IncludeHelpCommand = true;
             HelpCommandTemplate = DefaultHelpCommandTemplate;
 #if DEBUG
             WriteExceptionsToConsole = true;
@@ -101,8 +123,6 @@ namespace TheObtuseAngle.ConsoleUtilities
             EnableDebugFlag = false;
 #endif
         }
-
-        private HelpCommandTemplate helpCommandTemplate;
 
         /// <summary>
         /// Gets or sets the character to be used as a separator between argument names and values.  The default is space, ' '.  ex) .\Process.exe -argument value
@@ -133,6 +153,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// When true, arguments will be parsed by ordinal.  That is, no argument names should be given.  The default is false.  ex) .\Process.exe arg1 arg2 arg3
         /// </summary>
         public bool EnableValueOnlyParsing { get; set; }
+
+        /// <summary>
+        /// When true, the interactive mode argument template is not null, and the interactive mode argument is supplied then its value will be inversed.  In other words, the presence of this argument changes to be non-interactive.  The default is false.
+        /// </summary>
+        public bool InvertInteractiveModeArgument { get; set; }
 
         /// <summary>
         /// Gets or sets the text writer to use for output.  The default is Console.Out.
@@ -175,14 +200,19 @@ namespace TheObtuseAngle.ConsoleUtilities
         public string DebugFlag { get; set; }
 
         /// <summary>
-        /// Gets or sets the argument that when provided will display usage help.  Null is an allowed value.  The default is the "-help" argument.
+        /// Gets or sets the argument template that, when provided, will be used to construct the usage help argument.  Null is an allowed value.  The default is the "-help" argument.
         /// </summary>
-        public IArgument HelpArgument { get; set; }
+        public ArgumentTemplate HelpArgumentTemplate { get; set; }
 
         /// <summary>
-        /// Gets or sets the argument that when provided will enable quiet mode.  Null is an allowed value.  The default is the "-quiet" argument.
+        /// Gets or sets the argument template that, when provided, will be used to construct the quiet mode argument.  Null is an allowed value.  The default is the "-quiet" argument.
         /// </summary>
-        public IArgument QuietModeArgument { get; set; }
+        public ArgumentTemplate QuietModeArgumentTemplate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the argument template that, when provided, will be used to construct the interactive mode argument.  Null is an allowed value.  The default is the "-interactive" argument.
+        /// </summary>
+        public ArgumentTemplate InteractiveModeArgumentTemplate { get; set; }
 
         /// <summary>
         /// Gets or sets the WriteUsageMode to use when writing command usage information.  The default is "CommandNameAndArguments".
@@ -190,18 +220,9 @@ namespace TheObtuseAngle.ConsoleUtilities
         public WriteUsageMode WriteUsageMode { get; set; }
 
         /// <summary>
-        /// When true, the built in help command will be added to the list of possible commands when parsing.  When false it will be omitted.  The default is true.
+        /// Gets or sets the command template that, when provided, will be used to construct the help command.  Null is an allowed value.  The default is the "Help -command" command."
         /// </summary>
-        public bool IncludeHelpCommand { get; set; }
-
-        /// <summary>
-        /// Gets or sets the template to use for the help command.  A command template defines name, title, and description of a command without specifying any execution logic.
-        /// </summary>
-        public HelpCommandTemplate HelpCommandTemplate
-        {
-            get { return helpCommandTemplate ?? (helpCommandTemplate = DefaultHelpCommandTemplate); }
-            set { helpCommandTemplate = value; }
-        }
+        public HelpCommandTemplate HelpCommandTemplate { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether or not the parser is using Console.Out as the output stream.

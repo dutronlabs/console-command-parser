@@ -11,7 +11,11 @@ namespace TheObtuseAngle.ConsoleUtilities
     public class CommandParser
     {
         protected readonly TextWriter output;
+        protected readonly IArgument quietModeArgument;
+        protected readonly IArgument helpArgument;
+        protected readonly IArgument interactiveModeArgument;
         protected bool quietMode;
+        protected bool interactiveMode;
 
         public CommandParser()
             : this(ParseOptions.Defaults)
@@ -25,12 +29,30 @@ namespace TheObtuseAngle.ConsoleUtilities
                 parseOptions = ParseOptions.Defaults;
             }
 
-            this.output = parseOptions.OutputWriter;
+            output = parseOptions.OutputWriter;
             ParseOptions = parseOptions;
             ConsoleHelper.Initialize(output);
+
+            if (ParseOptions.QuietModeArgumentTemplate != null)
+            {
+                quietModeArgument = new Argument(ParseOptions.QuietModeArgumentTemplate, null);
+            }
+            if (ParseOptions.HelpArgumentTemplate != null)
+            {
+                helpArgument = new Argument(ParseOptions.HelpArgumentTemplate, null);
+            }
+            if (ParseOptions.InteractiveModeArgumentTemplate != null)
+            {
+                interactiveModeArgument = new Argument(ParseOptions.InteractiveModeArgumentTemplate, null);
+            }
         }
 
         public ParseOptions ParseOptions { get; set; }
+
+        public bool InteractiveMode
+        {
+            get { return interactiveMode; }
+        }
 
         public virtual ParseResult ParseArguments(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
         {
@@ -39,28 +61,21 @@ namespace TheObtuseAngle.ConsoleUtilities
                 throw new ArgumentNullException("possibleArguments");
             }
 
-            var argumentArray = possibleArguments.ToArray();
-
             if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
             {
                 HandleDebugFlag();
             }
 
-            if (ParseOptions.HelpArgument != null)
+            var argumentArray = possibleArguments.ToArray();
+            SetIncludedArguments(consoleArgs);
+
+            if (helpArgument != null && consoleArgs.HasArgument(helpArgument))
             {
-                if (consoleArgs.HasArgument(ParseOptions.HelpArgument))
-                {
-                    WriteUsage(argumentArray);
-                    return ParseResult.DisplayedHelp;
-                }
-            }
-            
-            if (ParseOptions.QuietModeArgument != null)
-            {
-                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
+                WriteUsage(argumentArray);
+                return ParseResult.DisplayedHelp;
             }
 
-            var parseResult = consoleArgs.ParseArguments(ParseOptions, argumentArray);
+            var parseResult = consoleArgs.ParseArguments(ParseOptions, interactiveMode, argumentArray);
             return ProcessArgumentParseResult(parseResult, argumentArray, true);
         }
 
@@ -77,13 +92,17 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name).ToList();
-            if (ParseOptions.HelpArgument != null && !argList.Contains(ParseOptions.HelpArgument))
+            if (helpArgument != null && !argList.Contains(helpArgument))
             {
-                argList.Add(ParseOptions.HelpArgument);
+                argList.Add(helpArgument);
             }
-            if (ParseOptions.QuietModeArgument != null && !argList.Contains(ParseOptions.QuietModeArgument))
+            if (quietModeArgument != null && !argList.Contains(quietModeArgument))
             {
-                argList.Add(ParseOptions.QuietModeArgument);
+                argList.Add(quietModeArgument);
+            }
+            if (interactiveModeArgument != null && !argList.Contains(interactiveModeArgument))
+            {
+                argList.Add(interactiveModeArgument);
             }
 
             int maxNameLength = 0;
@@ -240,6 +259,26 @@ namespace TheObtuseAngle.ConsoleUtilities
                     break;                
             }
         }
+
+        protected void SetIncludedArguments(string[] consoleArgs)
+        {
+            if (quietModeArgument != null && consoleArgs.HasArgument(quietModeArgument))
+            {
+                quietMode = true;
+                interactiveMode = false;
+                return;
+            }
+
+            if (interactiveModeArgument != null && consoleArgs.HasArgument(interactiveModeArgument))
+            {
+                interactiveMode = true;
+            }
+
+            if (ParseOptions.InvertInteractiveModeArgument)
+            {
+                interactiveMode = !interactiveMode;
+            }
+        }
     }
 
     public class CommandParser<TCommand> : CommandParser
@@ -292,10 +331,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 HandleDebugFlag();
             }
 
-            if (ParseOptions.QuietModeArgument != null)
-            {
-                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
-            }
+            SetIncludedArguments(consoleArgs);
 
             if (consoleArgs.Length == 0)
             {
@@ -309,10 +345,10 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return ParseResult.Failure;
             }
 
-            var hasHelpArg = ParseOptions.HelpArgument != null && consoleArgs.HasArgument(ParseOptions.HelpArgument);
+            var hasHelpArg = helpArgument != null && consoleArgs.HasArgument(helpArgument);
 
             // The help command needs some special treatment to keep this method as generic as it can be.
-            if (ParseOptions.IncludeHelpCommand && consoleArgs[0].Equals(ParseOptions.HelpCommandTemplate.Name, StringComparison.InvariantCultureIgnoreCase))
+            if (ParseOptions.HelpCommandTemplate != null && consoleArgs[0].Equals(ParseOptions.HelpCommandTemplate.Name, StringComparison.InvariantCultureIgnoreCase))
             {
                 var helpCommand = new HelpCommand<TCommand>(possibleCommands, output, ParseOptions.HelpCommandTemplate, WriteUsage);
                 var helpParseResult = ParseArgumentsForCommand(helpCommand, consoleArgs, hasHelpArg);
@@ -408,7 +444,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 templatesByCommand.Add(pair.Key, pair.Value);
             }
 
-            if (ParseOptions.IncludeHelpCommand && !templatesByCommand.Any(pair => pair.Key.Name.Equals(ParseOptions.HelpCommandTemplate.Name) && pair.Key.Description.Equals(ParseOptions.HelpCommandTemplate.Description)))
+            if (ParseOptions.HelpCommandTemplate != null && !templatesByCommand.Any(pair => pair.Key.Name.Equals(ParseOptions.HelpCommandTemplate.Name) && pair.Key.Description.Equals(ParseOptions.HelpCommandTemplate.Description)))
             {
                 var helpCommand = new HelpCommand<TCommand>(commands, output, ParseOptions.HelpCommandTemplate, WriteUsage);
                 templatesByCommand.Add(helpCommand, new CommandTemplate(helpCommand));
@@ -508,7 +544,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private ParseResult ParseArgumentsForCommand(ICommand command, string[] consoleArgs, bool hasHelpArg)
         {
-            var parseResult = consoleArgs.ParseArguments(ParseOptions, command.Arguments.ToArray());
+            var parseResult = consoleArgs.ParseArguments(ParseOptions, interactiveMode, command.Arguments.ToArray());
 
             if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
             {

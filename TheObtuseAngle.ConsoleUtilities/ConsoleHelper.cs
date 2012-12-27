@@ -77,7 +77,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
-        public static ArgumentParseResult ParseArguments(string[] consoleArgs, ParseOptions parseOptions, params IArgument[] possibleArguments)
+        public static ArgumentParseResult ParseArguments(string[] consoleArgs, ParseOptions parseOptions, bool isInteractiveMode, params IArgument[] possibleArguments)
         {
             var parsedArgs = new List<IArgument>();
 
@@ -124,36 +124,51 @@ namespace TheObtuseAngle.ConsoleUtilities
                 {
                     argValue = argValueProducer();
 
+                    if (string.IsNullOrWhiteSpace(argValue) && isInteractiveMode && parseOptions.IsUsingConsoleOutput)
+                    {
+                        argValue = PromptForArgumentValue(matchingArg);
+                    }
+
                     if (string.IsNullOrWhiteSpace(argValue))
                     {
                         return new ArgumentParseResult(matchingArg);
                     }
                 }
 
-                if (matchingArg.ValueSetter != null)
+                var setterResult = SetArgumentValue(matchingArg, argValue, parseOptions);
+                
+                if (setterResult != null)
                 {
-                    if (parseOptions.ThrowOnValueSetterException)
-                    {
-                        matchingArg.ValueSetter(argValue);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            matchingArg.ValueSetter(argValue);
-                        }
-                        catch (Exception valueSetterException)
-                        {
-                            return new ArgumentParseResult(new Tuple<IArgument, Exception>(matchingArg, valueSetterException));
-                        }
-                    }
+                    return setterResult;
                 }
-
+                
                 parsedArgs.Add(matchingArg);
 
                 if (needsIncrement)
                 {
                     i++;
+                }
+            }
+
+            if (isInteractiveMode && parseOptions.IsUsingConsoleOutput)
+            {
+                foreach (var arg in possibleArguments.Where(a => a.IsRequired && a.RequiresValue && !parsedArgs.Contains(a)).ToList())
+                {
+                    var value = PromptForArgumentValue(arg);
+
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        return new ArgumentParseResult(arg);
+                    }
+
+                    var setterResult = SetArgumentValue(arg, value, parseOptions);
+
+                    if (setterResult != null)
+                    {
+                        return setterResult;
+                    }
+
+                    parsedArgs.Add(arg);
                 }
             }
 
@@ -165,6 +180,41 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             return ArgumentParseResult.Success;
+        }
+
+        private static string PromptForArgumentValue(IArgument argument)
+        {
+            Console.WriteLine("Please provide a value for the argument {0} - {1}", argument.Name, argument.Description);
+            Console.Write("{0}: ", argument.Name);
+            var value = Console.ReadLine();
+            Console.WriteLine();
+            return value;
+        }
+
+        private static ArgumentParseResult SetArgumentValue(IArgument argument, string value, ParseOptions parseOptions)
+        {
+            if (argument.ValueSetter == null)
+            {
+                return null;
+            }
+            
+            if (parseOptions.ThrowOnValueSetterException)
+            {
+                argument.ValueSetter(value);
+            }
+            else
+            {
+                try
+                {
+                    argument.ValueSetter(value);
+                }
+                catch (Exception valueSetterException)
+                {
+                    return new ArgumentParseResult(new Tuple<IArgument, Exception>(argument, valueSetterException));
+                }
+            }
+
+            return null;
         }
     }
 }
