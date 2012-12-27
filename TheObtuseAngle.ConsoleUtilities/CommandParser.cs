@@ -10,8 +10,8 @@ namespace TheObtuseAngle.ConsoleUtilities
 {
     public class CommandParser
     {
-        private readonly TextWriter output;
-        private bool quietMode;
+        protected readonly TextWriter output;
+        protected bool quietMode;
 
         public CommandParser()
             : this(ParseOptions.Defaults)
@@ -46,9 +46,9 @@ namespace TheObtuseAngle.ConsoleUtilities
                 HandleDebugFlag();
             }
 
-            if (ParseOptions.DisplayHelpArgument != null)
+            if (ParseOptions.HelpArgument != null)
             {
-                if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
+                if (consoleArgs.HasArgument(ParseOptions.HelpArgument))
                 {
                     WriteUsage(argumentArray);
                     return ParseResult.DisplayedHelp;
@@ -64,169 +64,6 @@ namespace TheObtuseAngle.ConsoleUtilities
             return ProcessArgumentParseResult(parseResult, argumentArray, true);
         }
 
-        public virtual CommandParseResult ParseCommand(string[] consoleArgs, IEnumerable<ICommand> possibleCommands)
-        {
-            if (possibleCommands == null)
-            {
-                throw new ArgumentNullException("possibleCommands");
-            }
-
-            if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
-            {
-                HandleDebugFlag();
-            }
-
-            if (ParseOptions.QuietModeArgument != null)
-            {
-                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
-            }
-
-            if (consoleArgs.Length == 0)
-            {
-                if (ParseOptions.AllowNoMatchingCommands)
-                {
-                    return CommandParseResult.NoMatchFound;
-                }
-
-                WriteLine("No arguments given.");
-                WriteUsage(possibleCommands);
-                return CommandParseResult.Failure;
-            }
-
-            var commandsToSearch = possibleCommands.ToList();
-            commandsToSearch.Add(new HelpCommand(commandsToSearch, output, WriteUsage));
-            var command = commandsToSearch.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
-
-            if (command == null)
-            {
-                if (consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument))
-                {
-                    WriteUsage(possibleCommands);
-                    return CommandParseResult.DisplayedHelp;
-                }
-
-                if (ParseOptions.AllowNoMatchingCommands)
-                {
-                    return CommandParseResult.NoMatchFound;
-                }
-
-                WriteLine("Invalid command.");
-                WriteUsage(possibleCommands);
-                return CommandParseResult.Failure;
-            }
-
-            var parseResult = consoleArgs.ParseArguments(ParseOptions, command.Arguments.ToArray());
-            var hasHelpArg = ParseOptions.DisplayHelpArgument != null && consoleArgs.HasArgument(ParseOptions.DisplayHelpArgument);
-
-            if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
-            {
-                WriteUsage(command);
-                return hasHelpArg ? CommandParseResult.DisplayedHelp : CommandParseResult.Failure;
-            }
-
-            return new CommandParseResult(ParseResult.Success, command);
-        }
-
-        public virtual ParseResult ParseCommandAndExecute(string[] consoleArgs, IEnumerable<ICommand> possibleCommands)
-        {
-            var result = ParseCommand(consoleArgs, possibleCommands);
-
-            if (result.ParseResult != ParseResult.Success)
-            {
-                return result.ParseResult;
-            }
-
-            if (ParseOptions.ThrowOnParseAndExecuteException)
-            {
-                result.Command.Execute();
-                return ParseResult.Success;
-            }
-
-            try
-            {
-                result.Command.Execute();
-                return ParseResult.Success;
-            }
-            catch (Exception e)
-            {
-                WriteLine("Error executing the '{0}' command", result.Command.Name);
-                WriteException(e);
-                return ParseResult.Failure;
-            }
-        }        
-
-        public virtual void WriteUsage(IEnumerable<ICommand> commands)
-        {
-            if (quietMode)
-            {
-                return;
-            }
-
-            var commandList = commands.OrderBy(c => c.Name).ToList();
-            if (!commandList.Any(c => c.Name.Equals(HelpCommand.HelpCommandName) && c.Description.Equals(HelpCommand.HelpCommandDescription)))
-            {
-                commandList.Add(new HelpCommand(commands, output, WriteUsage));
-            }
-
-            int maxCommandNameLength = commandList.Max(c => c.Name.Length);
-            output.WriteLine();
-            output.WriteLine("Usage: {0} <COMMAND>", AppDomain.CurrentDomain.FriendlyName);
-            output.WriteLine();
-            output.WriteLine("Available Commands:");
-
-            foreach (var command in commandList)
-            {
-                WriteUsage(command, false, false, maxCommandNameLength);
-                output.WriteLine();
-            }
-        }
-
-        public void WriteUsage(ICommand command)
-        {
-            WriteUsage(command, true, true);
-        }
-
-        protected virtual void WriteUsage(ICommand command, bool writePrefix, bool writeArgumentDetails, int? maxCommandNameLength = null)
-        {
-            if (quietMode)
-            {
-                return;
-            }
-
-            int? offsetOverride = null;
-            var spacer = "  ";
-
-            if (writePrefix)
-            {
-                offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
-                spacer = string.Empty;
-                output.WriteLine();
-                output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
-            }
-
-            var formatString = maxCommandNameLength.HasValue ? string.Format("{{0}}{{1,-{0}}} ", maxCommandNameLength.Value) : "{0}{1} ";
-            output.Write(formatString, spacer, command.Name);
-
-            if (writeArgumentDetails)
-            {
-                WriteUsage(command.Arguments, false, offsetOverride);
-            }
-            else
-            {
-                var argumentUsageBuilder = new StringBuilder();
-
-                foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name))
-                {
-                    argumentUsageBuilder.Append(GetArgumentUsageString(argument));
-                    argumentUsageBuilder.Append(' ');
-                }
-
-                output.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
-            }
-
-            output.WriteLine();
-        }
-
         public void WriteUsage(IEnumerable<IArgument> arguments)
         {
             WriteUsage(arguments, true);
@@ -240,9 +77,9 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name).ToList();
-            if (ParseOptions.DisplayHelpArgument != null && !argList.Contains(ParseOptions.DisplayHelpArgument))
+            if (ParseOptions.HelpArgument != null && !argList.Contains(ParseOptions.HelpArgument))
             {
-                argList.Add(ParseOptions.DisplayHelpArgument);
+                argList.Add(ParseOptions.HelpArgument);
             }
             if (ParseOptions.QuietModeArgument != null && !argList.Contains(ParseOptions.QuietModeArgument))
             {
@@ -339,7 +176,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
-        private ParseResult ProcessArgumentParseResult(ArgumentParseResult parseResult, IEnumerable<IArgument> possibleArguments, bool writeUsage)
+        protected ParseResult ProcessArgumentParseResult(ArgumentParseResult parseResult, IEnumerable<IArgument> possibleArguments, bool writeUsage)
         {
             if (parseResult.IsSuccess)
             {
@@ -383,7 +220,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             return ParseResult.Failure;
         }
 
-        private void HandleDebugFlag()
+        protected void HandleDebugFlag()
         {
             if (!ParseOptions.EnableDebugFlag)
             {
@@ -403,5 +240,355 @@ namespace TheObtuseAngle.ConsoleUtilities
                     break;                
             }
         }
+    }
+
+    public class CommandParser<TCommand> : CommandParser
+        where TCommand : class, ICommand
+    {
+        public CommandParser()
+        {
+        }
+
+        public CommandParser(ParseOptions parseOptions)
+            : base(parseOptions)
+        {
+        }
+
+        /// <summary>
+        /// Raised for every possible command when the parser is writing the usage help for all possible commands.
+        /// This is an opportunity to override the command's properties or skip it entirely.
+        /// </summary>
+        public event Func<TCommand, WriteUsageOverrides> WritingSimpleCommandUsage;
+
+        /// <summary>
+        /// Raised when the parser is done writing the simple usage help for all possible commands.
+        /// This is an opportunity to write additional text to the output stream from your application. 
+        /// </summary>
+        public event Action<TextWriter> DoneWritingSimpleCommandUsage;
+
+        /// <summary>
+        /// Raised when the parser is writing the detailed usage help for a single command.
+        /// This is an opportunity to override the command's properties or skip it entirely.
+        /// </summary>
+        public event Func<TCommand, WriteUsageOverrides> WritingDetailedCommandUsage;
+
+        /// <summary>
+        /// Raised when the parser is done writing the detailed usage help for a single command.
+        /// This is an opportunity to write additional text to the output stream from your application. 
+        /// </summary>
+        public event Action<TCommand, TextWriter> DoneWritingDetailedCommandUsage;
+
+        public virtual ParseResult ParseCommand(string[] consoleArgs, IEnumerable<TCommand> possibleCommands, out TCommand matchingCommand)
+        {
+            matchingCommand = null;
+
+            if (possibleCommands == null)
+            {
+                throw new ArgumentNullException("possibleCommands");
+            }
+
+            if (consoleArgs.HasArgument(ParseOptions.DebugFlag))
+            {
+                HandleDebugFlag();
+            }
+
+            if (ParseOptions.QuietModeArgument != null)
+            {
+                quietMode = consoleArgs.HasArgument(ParseOptions.QuietModeArgument);
+            }
+
+            if (consoleArgs.Length == 0)
+            {
+                if (ParseOptions.AllowNoMatchingCommands)
+                {
+                    return ParseResult.NoMatchFound;
+                }
+
+                WriteLine("No arguments given.");
+                WriteUsage(possibleCommands);
+                return ParseResult.Failure;
+            }
+
+            var hasHelpArg = ParseOptions.HelpArgument != null && consoleArgs.HasArgument(ParseOptions.HelpArgument);
+
+            // The help command needs some special treatment to keep this method as generic as it can be.
+            if (ParseOptions.IncludeHelpCommand && consoleArgs[0].Equals(ParseOptions.HelpCommandTemplate.Name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                var helpCommand = new HelpCommand<TCommand>(possibleCommands, output, ParseOptions.HelpCommandTemplate, WriteUsage);
+                var helpParseResult = ParseArgumentsForCommand(helpCommand, consoleArgs, hasHelpArg);
+
+                if (helpParseResult == ParseResult.Failure)
+                {
+                    return helpParseResult;
+                }
+
+                helpCommand.Execute();
+                return ParseResult.DisplayedHelp;
+            }
+
+            var command = possibleCommands.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
+
+            if (command == null)
+            {
+                if (hasHelpArg)
+                {
+                    WriteUsage(possibleCommands);
+                    return ParseResult.DisplayedHelp;
+                }
+
+                if (ParseOptions.AllowNoMatchingCommands)
+                {
+                    return ParseResult.NoMatchFound;
+                }
+
+                WriteLine("Invalid command.");
+                WriteUsage(possibleCommands);
+                return ParseResult.Failure;
+            }
+
+            var result = ParseArgumentsForCommand(command, consoleArgs, hasHelpArg);
+
+            if (result != ParseResult.Success)
+            {
+                return result;
+            }
+
+            matchingCommand = command;
+            return ParseResult.Success;
+        }
+
+        public virtual ParseResult ParseCommandAndExecute(string[] consoleArgs, IEnumerable<TCommand> possibleCommands)
+        {
+            TCommand command;
+            var result = ParseCommand(consoleArgs, possibleCommands, out command);
+
+            if (result != ParseResult.Success)
+            {
+                return result;
+            }
+
+            if (ParseOptions.ThrowOnParseAndExecuteException)
+            {
+                command.Execute();
+                return ParseResult.Success;
+            }
+
+            try
+            {
+                command.Execute();
+                return ParseResult.Success;
+            }
+            catch (Exception e)
+            {
+                WriteLine("Error executing the '{0}' command", command.Name);
+                WriteException(e);
+                return ParseResult.Failure;
+            }
+        }
+
+        public virtual void WriteUsage(IEnumerable<TCommand> commands)
+        {
+            if (quietMode)
+            {
+                return;
+            }
+
+            var templatesByCommand = new Dictionary<ICommand, CommandTemplate>();
+
+            foreach (var command in commands)
+            {
+                var result = RaiseWritingSimpleCommandUsage(command);
+
+                if (result != null && result.Skip)
+                {
+                    continue;
+                }
+
+                var pair = GetCommandTemplatePairFromOverride(command, result);
+                templatesByCommand.Add(pair.Key, pair.Value);
+            }
+
+            if (ParseOptions.IncludeHelpCommand && !templatesByCommand.Any(pair => pair.Key.Name.Equals(ParseOptions.HelpCommandTemplate.Name) && pair.Key.Description.Equals(ParseOptions.HelpCommandTemplate.Description)))
+            {
+                var helpCommand = new HelpCommand<TCommand>(commands, output, ParseOptions.HelpCommandTemplate, WriteUsage);
+                templatesByCommand.Add(helpCommand, new CommandTemplate(helpCommand));
+            }
+
+            int maxCommandNameLength = templatesByCommand.Max(pair => pair.Value.Name.Length);
+            output.WriteLine();
+            output.WriteLine("Usage: {0} <COMMAND>", AppDomain.CurrentDomain.FriendlyName);
+            output.WriteLine();
+            output.WriteLine("Available Commands:");
+            output.WriteLine();
+
+            foreach (var command in templatesByCommand.OrderBy(pair => pair.Value.Name))
+            {
+                WriteUsage(command, true, maxCommandNameLength);
+
+                if (ParseOptions.WriteUsageMode == WriteUsageMode.CommandNameAndArguments)
+                {
+                    output.WriteLine();
+                }
+            }
+
+            RaiseDoneWritingSimpleCommandUsage();
+        }
+
+        public void WriteUsage(TCommand command)
+        {
+            var result = RaiseWritingDetailedCommandUsage(command);
+
+            if (result != null && result.Skip)
+            {
+                return;
+            }
+
+            WriteUsage(GetCommandTemplatePairFromOverride(command, result), false, null);
+            RaiseDoneWritingDetailedCommandUsage(command);
+        }
+
+        private void WriteUsage(KeyValuePair<ICommand, CommandTemplate> commandTemplatePair, bool isWritingMultipleCommands, int? maxCommandNameLength)
+        {
+            if (quietMode)
+            {
+                return;
+            }
+
+            int? offsetOverride = null;
+            var spacer = "  ";
+            var command = commandTemplatePair.Key;
+            var template = commandTemplatePair.Value;
+
+            if (!isWritingMultipleCommands)
+            {
+                offsetOverride = 7; // 7 = The length of the usage prefix, "Usage: "
+                spacer = string.Empty;
+                output.WriteLine();
+
+                if (!string.IsNullOrWhiteSpace(template.Description))
+                {
+                    output.WriteLine(template.Description);
+                    output.WriteLine();
+                }
+
+                output.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
+            }
+
+            var formatString = maxCommandNameLength.HasValue ? string.Format("{{0}}{{1,-{0}}} ", maxCommandNameLength.Value) : "{0}{1} ";
+            output.Write(formatString, spacer, template.Name);
+
+            if (!isWritingMultipleCommands)
+            {
+                WriteUsage(command.Arguments, false, offsetOverride);
+            }
+            else
+            {
+                switch (ParseOptions.WriteUsageMode)
+                {
+                    case WriteUsageMode.CommandNameAndTitle:
+                        output.Write(template.Title);
+                        break;
+
+                    case WriteUsageMode.CommandNameAndArguments:
+                        var argumentUsageBuilder = new StringBuilder();
+
+                        foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name))
+                        {
+                            argumentUsageBuilder.Append(GetArgumentUsageString(argument));
+                            argumentUsageBuilder.Append(' ');
+                        }
+
+                        output.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
+                        break;
+                }
+            }
+
+            output.WriteLine();
+        }
+
+        private ParseResult ParseArgumentsForCommand(ICommand command, string[] consoleArgs, bool hasHelpArg)
+        {
+            var parseResult = consoleArgs.ParseArguments(ParseOptions, command.Arguments.ToArray());
+
+            if (hasHelpArg || ProcessArgumentParseResult(parseResult, command.Arguments, false) == ParseResult.Failure)
+            {
+                var typedCommand = command as TCommand;
+                if (typedCommand == null)
+                {
+                    WriteUsage(GetCommandTemplatePairFromOverride(command, null), false, null);
+                }
+                else
+                {
+                    WriteUsage(typedCommand);
+                }
+                return hasHelpArg ? ParseResult.DisplayedHelp : ParseResult.Failure;
+            }
+
+            return ParseResult.Success;
+        }
+
+        private static KeyValuePair<ICommand, CommandTemplate> GetCommandTemplatePairFromOverride(ICommand command, WriteUsageOverrides overrideResult)
+        {
+            var template = new CommandTemplate(command);
+
+            if (overrideResult != null)
+            {
+                if (!string.IsNullOrWhiteSpace(overrideResult.NameOverride) && !overrideResult.NameOverride.Equals(command.Name))
+                {
+                    template.Name = overrideResult.NameOverride;
+                }
+                if (!string.IsNullOrWhiteSpace(overrideResult.TitleOverride) && !overrideResult.TitleOverride.Equals(command.Title))
+                {
+                    template.Title = overrideResult.TitleOverride;
+                }
+                if (!string.IsNullOrWhiteSpace(overrideResult.DescriptionOverride) && !overrideResult.DescriptionOverride.Equals(command.Description))
+                {
+                    template.Description = overrideResult.DescriptionOverride;
+                }
+            }
+
+            return new KeyValuePair<ICommand, CommandTemplate>(command, template);
+        }
+
+        private WriteUsageOverrides RaiseWritingSimpleCommandUsage(TCommand command)
+        {
+            var writingSimpleCommandUsage = WritingSimpleCommandUsage;
+            return writingSimpleCommandUsage != null ? writingSimpleCommandUsage(command) : null;
+        }
+
+        private void RaiseDoneWritingSimpleCommandUsage()
+        {
+            var doneWritingSimpleCommandUsage = DoneWritingSimpleCommandUsage;
+            if (doneWritingSimpleCommandUsage != null)
+            {
+                doneWritingSimpleCommandUsage(output);
+            }
+        }
+
+        private WriteUsageOverrides RaiseWritingDetailedCommandUsage(TCommand command)
+        {
+            var writingDetailedCommandUsage = WritingDetailedCommandUsage;
+            return writingDetailedCommandUsage != null ? writingDetailedCommandUsage(command) : null;
+        }
+
+        private void RaiseDoneWritingDetailedCommandUsage(TCommand command)
+        {
+            var doneWritingDetailedCommandUsage = DoneWritingDetailedCommandUsage;
+            if (doneWritingDetailedCommandUsage != null)
+            {
+                doneWritingDetailedCommandUsage(command, output);
+            }
+        }
+    }
+
+    public class WriteUsageOverrides
+    {
+        public bool Skip { get; set; }
+
+        public string NameOverride { get; set; }
+
+        public string TitleOverride { get; set; }
+
+        public string DescriptionOverride { get; set; }
     }
 }

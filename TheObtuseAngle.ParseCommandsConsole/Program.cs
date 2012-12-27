@@ -39,7 +39,7 @@ namespace TheObtuseAngle.ParseCommandsConsole
             {
                 var parserOptions = new ParseOptions();
                 parserOptions.DebugFlagAction = DebugFlagAction.ThreadSleep;
-                var parser = new CommandParser(parserOptions);
+                var parser = new CommandParser<ICommand>(parserOptions);
                 var result = parser.ParseCommandAndExecute(consoleArgs, commands);
 
                 Console.WriteLine();

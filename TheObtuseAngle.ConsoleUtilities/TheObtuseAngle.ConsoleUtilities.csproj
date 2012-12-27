@@ -41,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Argument.cs" />
+    <Compile Include="ArgumentTemplate.cs" />
+    <Compile Include="CommandTemplate.cs" />
+    <Compile Include="HelpCommandTemplate.cs" />
     <Compile Include="ParseResult.cs" />
     <Compile Include="ArgumentParseResult.cs" />
     <Compile Include="CommandParseResult.cs" />

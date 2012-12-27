@@ -2,37 +2,34 @@
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
-    public abstract class CommandBase : ICommand
+    public abstract class CommandBase : CommandTemplate, ICommand
     {
-        private readonly string name;
-        private readonly string description;
         private readonly IList<IArgument> arguments;
 
         protected CommandBase(string name, string description)
-            : this(name, description, null)
+            : this(name, string.Empty, description, null)
+        {
+        }
+
+        protected CommandBase(string name, string title, string description)
+            : this(name, title, description, null)
         {
         }
 
         protected CommandBase(string name, string description, IEnumerable<IArgument> arguments)
+            : this(name, string.Empty, description, arguments)
         {
-            this.name = name;
-            this.description = description;
+        }
+
+        protected CommandBase(string name, string title, string description, IEnumerable<IArgument> arguments)
+            : base(name, title, description)
+        {
             this.arguments = new List<IArgument>();
 
             if (arguments != null)
             {
                 this.arguments.AddRange(arguments);
             }
-        }
-
-        public virtual string Name
-        {
-            get { return name; }
-        }
-
-        public virtual string Description
-        {
-            get { return description; }
         }
 
         public virtual IList<IArgument> Arguments

@@ -5,22 +5,21 @@ using System.Linq;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
-    public sealed class HelpCommand : CommandBase
+    public sealed class HelpCommand<TCommand> : CommandBase
+        where TCommand : class, ICommand
     {
-        public const string HelpCommandName = "Help";
-        public const string HelpCommandDescription = "Displays usage information for the given command";
-        private readonly IEnumerable<ICommand> possibleCommands;
+        private readonly IEnumerable<TCommand> possibleCommands;
         private readonly TextWriter output;
-        private readonly Action<ICommand> writeUsageMethod;
+        private readonly Action<TCommand> writeUsageMethod;
         private string commandName;
 
-        internal HelpCommand(IEnumerable<ICommand> possibleCommands, TextWriter output, Action<ICommand> writeUsageMethod)
-            : base(HelpCommandName, HelpCommandDescription)
+        internal HelpCommand(IEnumerable<TCommand> possibleCommands, TextWriter output, HelpCommandTemplate template, Action<TCommand> writeUsageMethod)
+            : base(template.Name, template.Title, template.Description)
         {
             this.possibleCommands = possibleCommands;
             this.output = output;
             this.writeUsageMethod = writeUsageMethod;
-            this.Arguments.Add(new Argument("-command", "-c", "The name of the command to display help for", true, true, val => commandName = val));
+            this.Arguments.Add(new Argument(template.CommandArgumentTemplate.Name, template.CommandArgumentTemplate.Aliases, template.CommandArgumentTemplate.Description, true, true, val => commandName = val));
         }
 
         public override bool Execute()

@@ -81,7 +81,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         {
             var parsedArgs = new List<IArgument>();
 
-            if (possibleArguments.HasDuplicates(true, a => a.Name) || possibleArguments.SelectMany(a => a.Aliases).HasDuplicates(true))
+            if (possibleArguments.HasDuplicates(true, a => a.Name) || possibleArguments.Where(a => a.Aliases != null && a.Aliases.Length > 0).SelectMany(a => a.Aliases).HasDuplicates(true))
             {
                 throw new ArgumentException("Duplicate arguments detected.", "possibleArguments");
             }
