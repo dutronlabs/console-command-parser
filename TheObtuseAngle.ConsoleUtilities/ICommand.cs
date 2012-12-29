@@ -32,5 +32,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// </summary>
         /// <returns>True if the command executed successfully, otherwise false.</returns>
         bool Execute();
+
+        void WriteUsage();
     }
 }

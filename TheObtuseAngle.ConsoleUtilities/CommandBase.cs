@@ -38,5 +38,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         }
 
         public abstract bool Execute();
+
+        public virtual void WriteUsage()
+        {
+            var parser = new CommandParser();
+            parser.WriteUsage(this);
+        }
     }
 }
