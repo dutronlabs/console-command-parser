@@ -8,27 +8,70 @@ namespace TheObtuseAngle.ConsoleUtilities
 {
     public static class ConsoleHelper
     {
+        [ThreadStatic]
         private static TextWriter output;
+
+        [ThreadStatic]
+        private static ParseOptions parseOptions;
 
         static ConsoleHelper()
         {
-            output = Console.Out;
+            QuietMode = false;
+            InteractiveMode = false;
         }
 
-        public static void Initialize(TextWriter output)
+        private static TextWriter Output
         {
-            ConsoleHelper.output = output;
+            get
+            {
+                if (output == null)
+                {
+                    Initialize(ParseOptions.Defaults);
+                }
+                return output;
+            }
         }
 
-        public static void WriteException(Exception e)
+        private static ParseOptions Options
         {
+            get
+            {
+                if (parseOptions == null)
+                {
+                    Initialize(ParseOptions.Defaults);
+                }
+                return parseOptions;
+            }
+        }
+
+        internal static bool QuietMode { get; set; }
+
+        internal static bool InteractiveMode { get; set; }
+
+        internal static void Initialize(ParseOptions options)
+        {
+            output = Options.OutputWriter;
+            parseOptions = options;
+        }
+
+        public static void Initialize(TextWriter outputWriter)
+        {
+            output = outputWriter;
+        }
+
+        public static string GetFullDepthExceptionString(Exception e)
+        {
+            var builder = new StringBuilder();
+
             while (e != null)
             {
-                output.WriteLine(e.Message);
-                output.WriteLine(e.StackTrace);
-                output.WriteLine();
+                builder.AppendLine(e.Message);
+                builder.AppendLine(e.StackTrace);
+                builder.AppendLine();
                 e = e.InnerException;
             }
+
+            return builder.ToString();
         }
 
         public static bool ParseBoolArg(string value)
@@ -37,16 +80,86 @@ namespace TheObtuseAngle.ConsoleUtilities
             return val == "y" || val == "1" || val == "yes";
         }
 
-        public static void WriteWrapped(string textToWrap)
+        public static void WriteException(Exception exception)
         {
-            WriteWrapped(output, textToWrap);
+            WriteException(exception, false);
         }
 
-        public static void WriteWrapped(TextWriter output, string textToWrap, int? offsetOverride = null)
+        internal static void WriteException(Exception exception, bool forceWrite)
         {
-            if (!object.ReferenceEquals(output, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
+            if (!Options.WriteExceptionsToConsole)
             {
-                output.Write(textToWrap);
+                return;
+            }
+
+            WriteError(GetFullDepthExceptionString(exception));
+        }
+
+        public static void WriteError(string format, params object[] args)
+        {
+            Write(format, Options.ErrorConsoleColor, true, args);
+        }
+
+        public static void Write(string format, params object[] args)
+        {
+            Write(format, Options.OutputConsoleColor, false, args);
+        }
+
+        public static void WriteLine()
+        {
+            WriteLine(Output);
+        }
+
+        private static void WriteLine(TextWriter outputOverride)
+        {
+            if (!QuietMode)
+            {
+                outputOverride.WriteLine();
+            }
+        }
+
+        public static void WriteLine(string format, params object[] args)
+        {
+            Write(format, Options.OutputConsoleColor, true, args);
+        }
+
+        public static void WriteWrapped(string textToWrap, int? offsetOverride = null)
+        {
+            WriteWrapped(Output, textToWrap, offsetOverride);
+        }
+
+        private static void Write(string format, ConsoleColor color, bool newLine, params object[] args)
+        {
+            Write(Output, format, color, newLine, args);
+        }
+
+        private static void Write(TextWriter outputOverride, string format, ConsoleColor color, bool newLine, params object[] args)
+        {
+            if (QuietMode)
+            {
+                return;
+            }
+
+            var originalColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+
+            if (newLine)
+            {
+                outputOverride.WriteLine(format, args);
+            }
+            else
+            {
+                outputOverride.Write(format, args);
+            }
+
+            Console.ForegroundColor = originalColor;
+        }
+
+        public static void WriteWrapped(TextWriter outputOverride, string textToWrap, int? offsetOverride = null)
+        {
+            if (!object.ReferenceEquals(outputOverride, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
+            {
+                Write(outputOverride, textToWrap, Options.OutputConsoleColor, false);
             }
             else
             {
@@ -59,9 +172,9 @@ namespace TheObtuseAngle.ConsoleUtilities
                 {
                     if (lineBuilder.Length + word.Length + 1 > lineLength)
                     {
-                        output.Write(lineBuilder.ToString());
-                        output.WriteLine();
-                        output.Write(string.Empty.PadLeft(position));
+                        Write(outputOverride, lineBuilder.ToString(), Options.OutputConsoleColor, false);
+                        WriteLine(outputOverride);
+                        Write(outputOverride, string.Empty.PadLeft(position), Options.OutputConsoleColor, false);
                         lineLength = subsequentLineLength;
                         lineBuilder.Clear();
                     }
@@ -72,12 +185,12 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                 if (lineBuilder.Length > 0)
                 {
-                    output.Write(lineBuilder.ToString());
+                    Write(outputOverride, lineBuilder.ToString(), Options.OutputConsoleColor, false);
                 }
             }
         }
 
-        public static ArgumentParseResult ParseArguments(string[] consoleArgs, ParseOptions parseOptions, bool isInteractiveMode, params IArgument[] possibleArguments)
+        public static ArgumentParseResult ParseArguments(string[] consoleArgs, params IArgument[] possibleArguments)
         {
             var parsedArgs = new List<IArgument>();
 
@@ -93,7 +206,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 bool needsIncrement = false;
                 Func<string> argValueProducer;
 
-                if (parseOptions.ArgumentValueSeparator == ' ')
+                if (Options.ArgumentValueSeparator == ' ')
                 {
                     int index = i;
                     argName = consoleArgs[i];
@@ -106,7 +219,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
                 else
                 {
-                    var argParts = consoleArgs[i].Split(parseOptions.ArgumentValueSeparator);
+                    var argParts = consoleArgs[i].Split(Options.ArgumentValueSeparator);
                     argName = argParts[0];
                     argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
                 }
@@ -124,7 +237,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 {
                     argValue = argValueProducer();
 
-                    if (string.IsNullOrWhiteSpace(argValue) && isInteractiveMode && parseOptions.IsUsingConsoleOutput)
+                    if (string.IsNullOrWhiteSpace(argValue) && InteractiveMode && Options.IsUsingConsoleOutput)
                     {
                         argValue = PromptForArgumentValue(matchingArg);
                     }
@@ -135,7 +248,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                     }
                 }
 
-                var setterResult = SetArgumentValue(matchingArg, argValue, parseOptions);
+                var setterResult = SetArgumentValue(matchingArg, argValue);
                 
                 if (setterResult != null)
                 {
@@ -150,7 +263,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
-            if (isInteractiveMode && parseOptions.IsUsingConsoleOutput && (parseOptions.HelpArgumentTemplate == null || !consoleArgs.HasArgument(parseOptions.HelpArgumentTemplate)))
+            if (InteractiveMode && Options.IsUsingConsoleOutput && (Options.HelpArgumentTemplate == null || !consoleArgs.HasArgument(Options.HelpArgumentTemplate)))
             {
                 foreach (var arg in possibleArguments.Where(a => a.IsRequired && a.RequiresValue && !parsedArgs.Contains(a)).ToList())
                 {
@@ -161,7 +274,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                         return new ArgumentParseResult(arg);
                     }
 
-                    var setterResult = SetArgumentValue(arg, value, parseOptions);
+                    var setterResult = SetArgumentValue(arg, value);
 
                     if (setterResult != null)
                     {
@@ -184,21 +297,21 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private static string PromptForArgumentValue(IArgument argument)
         {
-            Console.WriteLine("Please provide a value for the argument {0} - {1}", argument.Name, argument.Description);
-            Console.Write("{0}: ", argument.Name);
+            WriteLine("Please provide a value for the argument {0} - {1}", argument.Name, argument.Description);
+            Write("{0}: ", argument.Name);
             var value = Console.ReadLine();
-            Console.WriteLine();
+            WriteLine();
             return value;
         }
 
-        private static ArgumentParseResult SetArgumentValue(IArgument argument, string value, ParseOptions parseOptions)
+        private static ArgumentParseResult SetArgumentValue(IArgument argument, string value)
         {
             if (argument.ValueSetter == null)
             {
                 return null;
             }
             
-            if (parseOptions.ThrowOnValueSetterException)
+            if (Options.ThrowOnValueSetterException)
             {
                 argument.ValueSetter(value);
             }

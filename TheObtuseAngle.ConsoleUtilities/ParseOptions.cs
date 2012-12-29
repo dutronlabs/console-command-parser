@@ -63,6 +63,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         public const string DefaultRequiredArgumentFormat = "<{0}>";
         public const string DefaultOptionalArgumentFormat = "[{0}]";
         public const string DefaultDebugFlag = "--debug";
+        public const int DefaultThreadSleepTime = 10;
         private ArgumentTemplate helpArgumentTemplate;
         private ArgumentTemplate quietModeArgumentTemplate;
         private ArgumentTemplate interactiveModeArgumentTemplate;
@@ -124,6 +125,10 @@ namespace TheObtuseAngle.ConsoleUtilities
             InteractiveModeArgumentTemplate = DefaultInteractiveModeArgumentTemplate;
             WriteUsageMode = WriteUsageMode.CommandNameAndArguments;
             HelpCommandTemplate = DefaultHelpCommandTemplate;
+            ThreadSleepTime = DefaultThreadSleepTime;
+            OutputConsoleColor = ConsoleColor.White;
+            ErrorConsoleColor = ConsoleColor.Red;
+            PromptConsoleColor = ConsoleColor.White;
 #if DEBUG
             WriteExceptionsToConsole = true;
             EnableDebugFlag = true;
@@ -207,6 +212,26 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// Gets or sets the debug flag.  The default is "--debug".
         /// </summary>
         public string DebugFlag { get; set; }
+
+        /// <summary>
+        /// The amount of time, in seconds, to pause when the debug flag action is "ThreadSleep" and the debug argument is given.  The default is 10.
+        /// </summary>
+        public int ThreadSleepTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the console color to use when writing output.  This is ignored when the output writer is something other than Console.Out.  The default is White.
+        /// </summary>
+        public ConsoleColor OutputConsoleColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the console color to use when writing error messages.  This is ignored when the output writer is something other than Console.Out.  The default is Red.
+        /// </summary>
+        public ConsoleColor ErrorConsoleColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the console color to use when prompting the user for input in interactive mode.  This is ignored when the output writer is something other than Console.Out.  The default is White.
+        /// </summary>
+        public ConsoleColor PromptConsoleColor { get; set; }
 
         /// <summary>
         /// Gets or sets the argument template that, when provided, will be used to construct the usage help argument.  Null is an allowed value.  The default is the "-help" argument.

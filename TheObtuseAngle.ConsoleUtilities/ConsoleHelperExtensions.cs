@@ -13,7 +13,12 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static void WriteToConsole(this Exception e)
         {
-            ConsoleHelper.WriteException(e);
+            ConsoleHelper.WriteException(e, true);
+        }
+
+        public static string ToFullDepthString(this Exception e)
+        {
+            return ConsoleHelper.GetFullDepthExceptionString(e);
         }
 
         public static bool HasArgument(this string[] consoleArgs, IArgument arg)
@@ -40,22 +45,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static ArgumentParseResult ParseArguments(this string[] consoleArgs, params IArgument[] possibleArguments)
         {
-            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, false, possibleArguments);
-        }
-
-        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, bool isInteractiveMode, params IArgument[] possibleArguments)
-        {
-            return ConsoleHelper.ParseArguments(consoleArgs, ParseOptions.Defaults, isInteractiveMode, possibleArguments);
-        }
-
-        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, ParseOptions parseOptions, params IArgument[] possibleArguments)
-        {
-            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, false, possibleArguments);
-        }
-
-        public static ArgumentParseResult ParseArguments(this string[] consoleArgs, ParseOptions parseOptions, bool isInteractiveMode, params IArgument[] possibleArguments)
-        {
-            return ConsoleHelper.ParseArguments(consoleArgs, parseOptions, isInteractiveMode, possibleArguments);
+            return ConsoleHelper.ParseArguments(consoleArgs, possibleArguments);
         }
     }
 }
