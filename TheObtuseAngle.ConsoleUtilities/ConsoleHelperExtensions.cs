@@ -22,6 +22,12 @@ namespace TheObtuseAngle.ConsoleUtilities
                 consoleArgs.Any(a => a.Equals(arg.Name, StringComparison.InvariantCultureIgnoreCase) || (arg.Aliases != null && arg.Aliases.Any(alias => alias.Equals(a, StringComparison.InvariantCultureIgnoreCase))));
         }
 
+        public static bool HasArgument(this string[] consoleArgs, ArgumentTemplate template)
+        {
+            return consoleArgs != null && template != null &&
+                consoleArgs.Any(a => a.Equals(template.Name, StringComparison.InvariantCultureIgnoreCase) || (template.Aliases != null && template.Aliases.Any(alias => alias.Equals(a, StringComparison.InvariantCultureIgnoreCase))));
+        }
+
         public static bool HasArgument(this string[] args, string arg)
         {
             return args == null || args.Any(a => a.Equals(arg, StringComparison.InvariantCultureIgnoreCase));

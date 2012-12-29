@@ -11,9 +11,9 @@ namespace TheObtuseAngle.ConsoleUtilities
     public class CommandParser
     {
         protected readonly TextWriter output;
-        protected readonly IArgument quietModeArgument;
-        protected readonly IArgument helpArgument;
-        protected readonly IArgument interactiveModeArgument;
+        protected IArgument quietModeArgument;
+        protected IArgument helpArgument;
+        protected IArgument interactiveModeArgument;
         protected bool quietMode;
         protected bool interactiveMode;
 
@@ -31,20 +31,9 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             output = parseOptions.OutputWriter;
             ParseOptions = parseOptions;
+            ParseOptions.ArgumentTemplateChanged += OnArgumentTemplateChanged;
             ConsoleHelper.Initialize(output);
-
-            if (ParseOptions.QuietModeArgumentTemplate != null)
-            {
-                quietModeArgument = new Argument(ParseOptions.QuietModeArgumentTemplate, null);
-            }
-            if (ParseOptions.HelpArgumentTemplate != null)
-            {
-                helpArgument = new Argument(ParseOptions.HelpArgumentTemplate, null);
-            }
-            if (ParseOptions.InteractiveModeArgumentTemplate != null)
-            {
-                interactiveModeArgument = new Argument(ParseOptions.InteractiveModeArgumentTemplate, null);
-            }
+            SetAllIncludedArguments();
         }
 
         public ParseOptions ParseOptions { get; set; }
@@ -67,7 +56,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             var argumentArray = possibleArguments.ToArray();
-            SetIncludedArguments(consoleArgs);
+            ParseIncludedArguments(consoleArgs);
 
             if (helpArgument != null && consoleArgs.HasArgument(helpArgument))
             {
@@ -260,8 +249,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
-        protected void SetIncludedArguments(string[] consoleArgs)
+        protected void ParseIncludedArguments(string[] consoleArgs)
         {
+            // First reset all the args in case this is the second time through here for the same parser.
+            quietMode = false;
+            interactiveMode = false;
+
             if (quietModeArgument != null && consoleArgs.HasArgument(quietModeArgument))
             {
                 quietMode = true;
@@ -278,6 +271,33 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 interactiveMode = !interactiveMode;
             }
+        }
+
+        private void OnArgumentTemplateChanged(ArgumentTemplateType type, ArgumentTemplate template)
+        {
+            var newArgument = template == null ? null : new Argument(template, null);
+
+            switch (type)
+            {
+                case ArgumentTemplateType.Help:
+                    helpArgument = newArgument;
+                    break;
+                case ArgumentTemplateType.QuietMode:
+                    quietModeArgument = newArgument;
+                    break;
+                case ArgumentTemplateType.InteractiveMode:
+                    interactiveModeArgument = newArgument;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("type");
+            }
+        }
+
+        private void SetAllIncludedArguments()
+        {
+            OnArgumentTemplateChanged(ArgumentTemplateType.Help, ParseOptions.HelpArgumentTemplate);
+            OnArgumentTemplateChanged(ArgumentTemplateType.QuietMode, ParseOptions.QuietModeArgumentTemplate);
+            OnArgumentTemplateChanged(ArgumentTemplateType.InteractiveMode, ParseOptions.InteractiveModeArgumentTemplate);
         }
     }
 
@@ -331,7 +351,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 HandleDebugFlag();
             }
 
-            SetIncludedArguments(consoleArgs);
+            ParseIncludedArguments(consoleArgs);
 
             if (consoleArgs.Length == 0)
             {

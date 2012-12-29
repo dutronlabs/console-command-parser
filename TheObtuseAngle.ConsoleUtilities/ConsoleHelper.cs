@@ -150,7 +150,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
-            if (isInteractiveMode && parseOptions.IsUsingConsoleOutput)
+            if (isInteractiveMode && parseOptions.IsUsingConsoleOutput && (parseOptions.HelpArgumentTemplate == null || !consoleArgs.HasArgument(parseOptions.HelpArgumentTemplate)))
             {
                 foreach (var arg in possibleArguments.Where(a => a.IsRequired && a.RequiresValue && !parsedArgs.Contains(a)).ToList())
                 {

@@ -45,6 +45,13 @@ namespace TheObtuseAngle.ConsoleUtilities
         CommandNameAndArguments
     }
 
+    internal enum ArgumentTemplateType
+    {
+        Help,
+        QuietMode,
+        InteractiveMode
+    }
+
     /// <summary>
     /// An object that holds all the possible options that the command parser will use while parsing commands.
     /// </summary>
@@ -56,6 +63,9 @@ namespace TheObtuseAngle.ConsoleUtilities
         public const string DefaultRequiredArgumentFormat = "<{0}>";
         public const string DefaultOptionalArgumentFormat = "[{0}]";
         public const string DefaultDebugFlag = "--debug";
+        private ArgumentTemplate helpArgumentTemplate;
+        private ArgumentTemplate quietModeArgumentTemplate;
+        private ArgumentTemplate interactiveModeArgumentTemplate;
 
         public static readonly ArgumentTemplate DefaultQuietModeArgumentTemplate = new ArgumentTemplate
         {
@@ -74,7 +84,6 @@ namespace TheObtuseAngle.ConsoleUtilities
         public static readonly ArgumentTemplate DefaultInteractiveModeArgumentTemplate = new ArgumentTemplate
         {
             Name = "-interactive",
-            Aliases = new[] { "-i" },
             Description = "When provided, the user will be prompted for missing required arguments"
         };
 
@@ -202,17 +211,41 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// <summary>
         /// Gets or sets the argument template that, when provided, will be used to construct the usage help argument.  Null is an allowed value.  The default is the "-help" argument.
         /// </summary>
-        public ArgumentTemplate HelpArgumentTemplate { get; set; }
+        public ArgumentTemplate HelpArgumentTemplate
+        {
+            get { return helpArgumentTemplate; }
+            set
+            {
+                helpArgumentTemplate = value;
+                RaiseArgumentTemplateChangedEvent(ArgumentTemplateType.Help, value);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the argument template that, when provided, will be used to construct the quiet mode argument.  Null is an allowed value.  The default is the "-quiet" argument.
         /// </summary>
-        public ArgumentTemplate QuietModeArgumentTemplate { get; set; }
+        public ArgumentTemplate QuietModeArgumentTemplate
+        {
+            get { return quietModeArgumentTemplate; }
+            set
+            {
+                quietModeArgumentTemplate = value;
+                RaiseArgumentTemplateChangedEvent(ArgumentTemplateType.QuietMode, value);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the argument template that, when provided, will be used to construct the interactive mode argument.  Null is an allowed value.  The default is the "-interactive" argument.
         /// </summary>
-        public ArgumentTemplate InteractiveModeArgumentTemplate { get; set; }
+        public ArgumentTemplate InteractiveModeArgumentTemplate
+        {
+            get { return interactiveModeArgumentTemplate; }
+            set
+            {
+                interactiveModeArgumentTemplate = value;
+                RaiseArgumentTemplateChangedEvent(ArgumentTemplateType.InteractiveMode, value);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the WriteUsageMode to use when writing command usage information.  The default is "CommandNameAndArguments".
@@ -230,6 +263,18 @@ namespace TheObtuseAngle.ConsoleUtilities
         internal bool IsUsingConsoleOutput
         {
             get { return object.ReferenceEquals(OutputWriter, Console.Out); }
+        }
+
+        internal event Action<ArgumentTemplateType, ArgumentTemplate> ArgumentTemplateChanged;
+
+        private void RaiseArgumentTemplateChangedEvent(ArgumentTemplateType type, ArgumentTemplate newTemplate)
+        {
+            var handler = ArgumentTemplateChanged;
+
+            if (handler != null)
+            {
+                handler(type, newTemplate);
+            }
         }
     }
 }
