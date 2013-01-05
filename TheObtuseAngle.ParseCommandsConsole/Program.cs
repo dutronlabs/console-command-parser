@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
+using System.Reflection;
 using TheObtuseAngle.ConsoleUtilities;
 using TheObtuseAngle.ConsoleUtilities.Arguments;
 using TheObtuseAngle.ConsoleUtilities.Commands;
@@ -8,7 +11,6 @@ namespace TheObtuseAngle.ParseCommandsConsole
 {
     public class Program
     {
-        private readonly IEnumerable<ICommand> commands;
         private readonly string[] consoleArgs;
 
         public static void Main(string[] args)
@@ -22,21 +24,25 @@ namespace TheObtuseAngle.ParseCommandsConsole
         public Program(string[] consoleArgs)
         {
             this.consoleArgs = consoleArgs;
-            this.commands = new ICommand[]
-            {
-                new AddUserCommand(),
-                new AddUsersCommand(),
-                new ListUsersCommand(),
-                new LoginCommand()
-            };
+            Compose();
         }
+
+        private void Compose()
+        {
+            var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
+            var container = new CompositionContainer(catalog);
+            container.ComposeParts(this);
+        }
+
+        [ImportMany]
+        public IEnumerable<CommandBase> Commands { get; set; }
 
         public void Run()
         {
             try
             {
                 var parser = new CommandParser<ICommand>();
-                var result = parser.ParseCommandAndExecute(consoleArgs, commands);
+                var result = parser.ParseCommandAndExecute(consoleArgs, Commands);
 
                 Console.WriteLine();
                 Console.WriteLine(result);
@@ -48,8 +54,10 @@ namespace TheObtuseAngle.ParseCommandsConsole
         }
     }
 
-    public class AddUserCommand : CommandBase
+    [Export(typeof(CommandBase))]
+    public sealed class AddUserCommand : CommandBase
     {
+        private readonly List<Argument> orderedArgs;
         private string userName;
         private string password;
         private string nickname;
@@ -57,9 +65,15 @@ namespace TheObtuseAngle.ParseCommandsConsole
         public AddUserCommand()
             : base("AddUser", "Adds a user to the user store")
         {
-            this.Arguments.Add(new Argument("-userName", "-n", "The name of the new user", true, true, val => userName = val));
-            this.Arguments.Add(new Argument("-password", "-pw", "The password for the new user", true, true, val => password = val));
-            this.Arguments.Add(new Argument("-nickname", "-nn", "The nickname of the new user", true, false, val => nickname = val));
+            orderedArgs = new List<Argument>
+            {
+                new Argument("-userName", "-n", "The name of the new user", true, true, val => userName = val),
+                new Argument("-password", "-pw", "The password for the new user", true, true, val => password = val),
+                new Argument("-nickname", "-nn", "The nickname of the new user", true, false, val => nickname = val)
+            };
+            Arguments.Add(orderedArgs[0]);
+            Arguments.Add(orderedArgs[1]);
+            Arguments.Add(orderedArgs[2]);
         }
 
         public override bool Execute()
@@ -67,8 +81,14 @@ namespace TheObtuseAngle.ParseCommandsConsole
             Console.WriteLine("Adding user:{0}  Username: {1}{0}  Password: {2}{0}  Nickname: {3}", Environment.NewLine, userName, password, nickname);
             return true;
         }
+
+        public override IEnumerable<IArgument> GetOrderedArguments()
+        {
+            return orderedArgs;
+        }
     }
 
+    [Export(typeof(CommandBase))]
     public class AddUsersCommand : CommandBase
     {
         private readonly List<User> users = new List<User>();
@@ -131,6 +151,7 @@ namespace TheObtuseAngle.ParseCommandsConsole
         }
     }
 
+    [Export(typeof(CommandBase))]
     public class ListUsersCommand : CommandBase
     {
         public ListUsersCommand()
@@ -145,6 +166,7 @@ namespace TheObtuseAngle.ParseCommandsConsole
         }
     }
 
+    [Export(typeof(CommandBase))]
     public class LoginCommand : CommandBase
     {
         private string userName;
