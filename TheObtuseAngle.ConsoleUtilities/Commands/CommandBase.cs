@@ -7,13 +7,14 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     public abstract class CommandBase : CommandTemplate, ICommand
     {
+        private const int defaultOrdinal = int.MaxValue - 1;
         private readonly IList<IArgument> arguments;
         private MethodInfo writeUsageMethod;
         private Object parserInstance;
         private int ordinal;
 
         protected CommandBase(string name, string description)
-            : this(name, string.Empty, description, 0, null)
+            : this(name, string.Empty, description, defaultOrdinal, null)
         {
         }
 
@@ -23,7 +24,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         }
 
         protected CommandBase(string name, string title, string description)
-            : this(name, title, description, 0, null)
+            : this(name, title, description, defaultOrdinal, null)
         {
         }
 
@@ -33,7 +34,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         }
 
         protected CommandBase(string name, string description, IEnumerable<IArgument> arguments)
-            : this(name, string.Empty, description, 0, arguments)
+            : this(name, string.Empty, description, defaultOrdinal, arguments)
         {
         }
 
@@ -43,7 +44,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         }
 
         protected CommandBase(string name, string title, string description, IEnumerable<IArgument> arguments)
-            : this(name, title, description, 0, arguments)
+            : this(name, title, description, defaultOrdinal, arguments)
         {
         }
 
@@ -68,6 +69,11 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         public virtual IList<IArgument> Arguments
         {
             get { return arguments; }
+        }
+
+        public virtual IEnumerable<IArgument> GetOrderedArguments()
+        {
+            return null;
         }
 
         public abstract bool Execute();

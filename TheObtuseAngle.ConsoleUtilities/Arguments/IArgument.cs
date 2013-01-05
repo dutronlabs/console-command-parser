@@ -14,8 +14,6 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
 
         bool IsRequired { get; set; }
 
-        int Ordinal { get; set; }
-
         Action<string> ValueSetter { get; set; }
     }
 }

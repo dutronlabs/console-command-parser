@@ -70,28 +70,29 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public void WriteUsage(IEnumerable<IArgument> arguments)
         {
-            WriteUsage(arguments, true);
+            WriteUsage(arguments, true, true, null);
         }
 
-        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix, int? offsetOverride = null)
+        protected virtual void WriteUsage(IEnumerable<IArgument> arguments, bool writePrefix, bool applyOrdering, int? offsetOverride)
         {
             if (quietMode)
             {
                 return;
             }
 
-            var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Ordinal).ThenBy(a => a.Name).ToList();
-            if (helpArgument != null && !argList.Contains(helpArgument))
+            var argList = ParseOptions.ArgumentOrderByFunction == null || !applyOrdering ? arguments.ToList() : ParseOptions.ArgumentOrderByFunction(arguments).ToList();
+
+            if (interactiveModeArgument != null && !argList.Contains(interactiveModeArgument))
             {
-                argList.Add(helpArgument);
+                argList.Add(interactiveModeArgument);
             }
             if (quietModeArgument != null && !argList.Contains(quietModeArgument))
             {
                 argList.Add(quietModeArgument);
             }
-            if (interactiveModeArgument != null && !argList.Contains(interactiveModeArgument))
+            if (helpArgument != null && !argList.Contains(helpArgument))
             {
-                argList.Add(interactiveModeArgument);
+                argList.Add(helpArgument);
             }
 
             int maxNameLength = 0;
@@ -456,7 +457,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 WriteUsage(command, true, maxCommandNameLength);
 
-                if (ParseOptions.WriteUsageMode == WriteUsageMode.CommandNameAndArguments)
+                if (ParseOptions.WriteBlankLineBetweenEachCommand)
                 {
                     ConsoleHelper.WriteLine();
                 }
@@ -505,12 +506,22 @@ namespace TheObtuseAngle.ConsoleUtilities
                 ConsoleHelper.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
             }
 
+            var orderedArgs = command.GetOrderedArguments();
             var formatString = maxCommandNameLength.HasValue ? string.Format("{{0}}{{1,-{0}}} ", maxCommandNameLength.Value) : "{0}{1} ";
             ConsoleHelper.Write(formatString, spacer, template.Name);
 
+            if (orderedArgs == null && ParseOptions.ArgumentOrderByFunction != null)
+            {
+                orderedArgs = ParseOptions.ArgumentOrderByFunction(command.Arguments);
+            }
+            else
+            {
+                orderedArgs = command.Arguments;
+            }
+
             if (!isWritingMultipleCommands)
             {
-                WriteUsage(command.Arguments, false, offsetOverride);
+                WriteUsage(orderedArgs, false, false, offsetOverride);
             }
             else
             {
@@ -523,7 +534,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                     case WriteUsageMode.CommandNameAndArguments:
                         var argumentUsageBuilder = new StringBuilder();
 
-                        foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Ordinal).ThenBy(a => a.Name))
+                        foreach (var argument in orderedArgs)
                         {
                             argumentUsageBuilder.Append(GetArgumentUsageString(argument));
                             argumentUsageBuilder.Append(' ');
@@ -610,16 +621,5 @@ namespace TheObtuseAngle.ConsoleUtilities
                 doneWritingDetailedCommandUsage(command, ParseOptions.OutputWriter);
             }
         }
-    }
-
-    public class WriteUsageOverrides
-    {
-        public bool Skip { get; set; }
-
-        public string NameOverride { get; set; }
-
-        public string TitleOverride { get; set; }
-
-        public string DescriptionOverride { get; set; }
     }
 }

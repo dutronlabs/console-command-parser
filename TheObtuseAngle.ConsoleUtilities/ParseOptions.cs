@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TheObtuseAngle.ConsoleUtilities.Arguments;
 using TheObtuseAngle.ConsoleUtilities.Commands;
 
@@ -104,6 +106,9 @@ namespace TheObtuseAngle.ConsoleUtilities
                 RequiresValue = true
             }
         };
+
+        public static readonly Func<IEnumerable<IArgument>, IEnumerable<IArgument>> DefaultArgumentOrderByFunction =
+            args => args.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name);
         
         public static readonly ParseOptions Defaults = new ParseOptions();
         
@@ -115,6 +120,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             ThrowOnParseAndExecuteException = true;
             EnableValueOnlyParsing = false;
             InvertInteractiveModeArgument = false;
+            WriteBlankLineBetweenEachCommand = false;
             OutputWriter = Console.Out;
             ArgumentValueIndicator = DefaultArgumentValueIndicator;
             RequiredArgumentIndicator = DefaultRequiredArgumentIndicator;
@@ -131,6 +137,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             OutputConsoleColor = ConsoleColor.White;
             ErrorConsoleColor = ConsoleColor.Red;
             PromptConsoleColor = ConsoleColor.White;
+            ArgumentOrderByFunction = DefaultArgumentOrderByFunction;
 #if DEBUG
             WriteExceptionsToConsole = true;
             EnableDebugFlag = true;
@@ -280,9 +287,19 @@ namespace TheObtuseAngle.ConsoleUtilities
         public WriteUsageMode WriteUsageMode { get; set; }
 
         /// <summary>
+        /// When true, a blank line will be written to the console between each command when writing the usage for all commands.  The default is false;
+        /// </summary>
+        public bool WriteBlankLineBetweenEachCommand { get; set; }
+
+        /// <summary>
         /// Gets or sets the command template that, when provided, will be used to construct the help command.  Null is an allowed value.  The default is the "Help -command" command."
         /// </summary>
         public HelpCommandTemplate HelpCommandTemplate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the function to be invoked when ordering arguments for display.  Null is an allowed value.  The default is: args => args.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name);
+        /// </summary>
+        public Func<IEnumerable<IArgument>, IEnumerable<IArgument>> ArgumentOrderByFunction { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether or not the parser is using Console.Out as the output stream.
