@@ -1,4 +1,6 @@
-namespace TheObtuseAngle.ConsoleUtilities
+using TheObtuseAngle.ConsoleUtilities.Arguments;
+
+namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     public class HelpCommandTemplate : CommandTemplate
     {

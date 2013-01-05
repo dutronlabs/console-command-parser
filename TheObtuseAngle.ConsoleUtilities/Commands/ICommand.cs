@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using TheObtuseAngle.ConsoleUtilities.Arguments;
 
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     /// <summary>
     /// Represents a console command.
@@ -21,6 +22,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// The description of the command.  This is the long, verbose description of what the command does.  For complicated commands examples are also appropriate here.
         /// </summary>
         string Description { get; }
+
+        /// <summary>
+        /// The position of this command in the list of all possible commands.  This is used to order the list of possible commands when writing usage help.
+        /// </summary>
+        int Ordinal { get; set; }
 
         /// <summary>
         /// The collection of arguments for this command.

@@ -1,4 +1,4 @@
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     public class CommandTemplate
     {

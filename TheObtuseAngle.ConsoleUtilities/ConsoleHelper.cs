@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TheObtuseAngle.ConsoleUtilities.Arguments;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
@@ -14,11 +15,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         [ThreadStatic]
         private static ParseOptions parseOptions;
 
-        static ConsoleHelper()
-        {
-            QuietMode = false;
-            InteractiveMode = false;
-        }
+        [ThreadStatic]
+        private static bool quietMode;
+
+        [ThreadStatic]
+        private static bool interactiveMode;
 
         private static TextWriter Output
         {
@@ -44,14 +45,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
-        internal static bool QuietMode { get; set; }
-
-        internal static bool InteractiveMode { get; set; }
-
-        internal static void Initialize(ParseOptions options)
+        internal static void Initialize(ParseOptions options, bool isQuietMode = false, bool isInteractiveMode = false)
         {
-            output = Options.OutputWriter;
+            output = options.OutputWriter;
             parseOptions = options;
+            quietMode = isQuietMode;
+            interactiveMode = isInteractiveMode;
         }
 
         public static void Initialize(TextWriter outputWriter)
@@ -87,7 +86,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         internal static void WriteException(Exception exception, bool forceWrite)
         {
-            if (!Options.WriteExceptionsToConsole)
+            if (!forceWrite && !Options.WriteExceptionsToConsole)
             {
                 return;
             }
@@ -112,7 +111,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private static void WriteLine(TextWriter outputOverride)
         {
-            if (!QuietMode)
+            if (!quietMode)
             {
                 outputOverride.WriteLine();
             }
@@ -135,7 +134,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private static void Write(TextWriter outputOverride, string format, ConsoleColor color, bool newLine, params object[] args)
         {
-            if (QuietMode)
+            if (quietMode)
             {
                 return;
             }
@@ -237,7 +236,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 {
                     argValue = argValueProducer();
 
-                    if (string.IsNullOrWhiteSpace(argValue) && InteractiveMode && Options.IsUsingConsoleOutput)
+                    if (string.IsNullOrWhiteSpace(argValue) && interactiveMode && Options.IsUsingConsoleOutput)
                     {
                         argValue = PromptForArgumentValue(matchingArg);
                     }
@@ -263,7 +262,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
-            if (InteractiveMode && Options.IsUsingConsoleOutput && (Options.HelpArgumentTemplate == null || !consoleArgs.HasArgument(Options.HelpArgumentTemplate)))
+            if (interactiveMode && Options.IsUsingConsoleOutput && (Options.HelpArgumentTemplate == null || !consoleArgs.HasArgument(Options.HelpArgumentTemplate)))
             {
                 foreach (var arg in possibleArguments.Where(a => a.IsRequired && a.RequiresValue && !parsedArgs.Contains(a)).ToList())
                 {

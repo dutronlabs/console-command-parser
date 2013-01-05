@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using TheObtuseAngle.ConsoleUtilities.Arguments;
 
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     public sealed class HelpCommand<TCommand> : CommandBase
         where TCommand : class, ICommand
@@ -12,7 +13,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         private string commandName;
 
         internal HelpCommand(IEnumerable<TCommand> possibleCommands, CommandParser<TCommand> parser)
-            : base(parser.ParseOptions.HelpCommandTemplate.Name, parser.ParseOptions.HelpCommandTemplate.Title, parser.ParseOptions.HelpCommandTemplate.Description)
+            : base(parser.ParseOptions.HelpCommandTemplate.Name, parser.ParseOptions.HelpCommandTemplate.Title, parser.ParseOptions.HelpCommandTemplate.Description, int.MaxValue)
         {
             this.possibleCommands = possibleCommands;
             this.parser = parser;

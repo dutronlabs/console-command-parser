@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Arguments
 {
     public class ArgumentParseResult
     {

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Arguments
 {
     public interface IArgument
     {
@@ -13,6 +13,8 @@ namespace TheObtuseAngle.ConsoleUtilities
         bool RequiresValue { get; set; }
 
         bool IsRequired { get; set; }
+
+        int Ordinal { get; set; }
 
         Action<string> ValueSetter { get; set; }
     }

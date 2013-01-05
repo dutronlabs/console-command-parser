@@ -1,4 +1,6 @@
 ﻿
+using TheObtuseAngle.ConsoleUtilities.Commands;
+
 namespace TheObtuseAngle.ConsoleUtilities
 {
     public sealed class CommandParseResult

@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using TheObtuseAngle.ConsoleUtilities.Arguments;
+using TheObtuseAngle.ConsoleUtilities.Commands;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
@@ -78,7 +80,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return;
             }
 
-            var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name).ToList();
+            var argList = arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Ordinal).ThenBy(a => a.Name).ToList();
             if (helpArgument != null && !argList.Contains(helpArgument))
             {
                 argList.Add(helpArgument);
@@ -243,8 +245,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 interactiveMode = !interactiveMode;
             }
 
-            ConsoleHelper.QuietMode = quietMode;
-            ConsoleHelper.InteractiveMode = interactiveMode;
+            ConsoleHelper.Initialize(ParseOptions, quietMode, interactiveMode);
         }
 
         private void OnArgumentTemplateChanged(ArgumentTemplateType type, ArgumentTemplate template)
@@ -451,7 +452,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             ConsoleHelper.WriteLine("Available Commands:");
             ConsoleHelper.WriteLine();
 
-            foreach (var command in templatesByCommand.OrderBy(pair => pair.Value.Name))
+            foreach (var command in templatesByCommand.OrderBy(pair => pair.Key.Ordinal).ThenBy(pair => pair.Value.Name))
             {
                 WriteUsage(command, true, maxCommandNameLength);
 
@@ -522,13 +523,13 @@ namespace TheObtuseAngle.ConsoleUtilities
                     case WriteUsageMode.CommandNameAndArguments:
                         var argumentUsageBuilder = new StringBuilder();
 
-                        foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name))
+                        foreach (var argument in command.Arguments.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Ordinal).ThenBy(a => a.Name))
                         {
                             argumentUsageBuilder.Append(GetArgumentUsageString(argument));
                             argumentUsageBuilder.Append(' ');
                         }
 
-                        ConsoleHelper.WriteWrapped(argumentUsageBuilder.ToString(), offsetOverride);
+                        ConsoleHelper.WriteWrapped(argumentUsageBuilder.ToString());
                         break;
                 }
             }

@@ -1,4 +1,4 @@
-namespace TheObtuseAngle.ConsoleUtilities
+namespace TheObtuseAngle.ConsoleUtilities.Arguments
 {
     public class ArgumentTemplate
     {
