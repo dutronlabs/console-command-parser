@@ -2,7 +2,7 @@
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
-    internal static class ICollectionExtensions
+    internal static class CollectionExtensions
     {
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> values)
         {

@@ -42,6 +42,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddUserCommand.cs" />
+    <Compile Include="AddUsersCommand.cs" />
+    <Compile Include="AuthenticatedCommandBase.cs" />
+    <Compile Include="ExampleCommandBase.cs" />
+    <Compile Include="ListUsersCommand.cs" />
+    <Compile Include="LoginCommand.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

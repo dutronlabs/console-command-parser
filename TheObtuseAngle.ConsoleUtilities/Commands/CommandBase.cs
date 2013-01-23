@@ -71,16 +71,15 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
             get { return arguments; }
         }
 
-        public virtual IEnumerable<IArgument> GetOrderedArguments()
-        {
-            return null;
-        }
-
         public abstract bool Execute();
 
         public virtual void WriteUsage()
         {
             WriteUsageMethod.Invoke(ParserInstance, new object[] { this });
+        }
+
+        public virtual void OnBeforeParse()
+        {
         }
 
         private Object ParserInstance

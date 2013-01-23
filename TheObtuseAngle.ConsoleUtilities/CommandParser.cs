@@ -328,6 +328,8 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             ParseIncludedArguments(consoleArgs);
+            var allCommands = possibleCommands.ToList();
+            allCommands.ForEach(cmd => cmd.OnBeforeParse());
 
             if (consoleArgs.Length == 0)
             {
@@ -337,7 +339,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
 
                 ConsoleHelper.WriteLine("No arguments given.");
-                WriteUsage(possibleCommands);
+                WriteUsage(allCommands);
                 return ParseResult.Failure;
             }
 
@@ -346,7 +348,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             // The help command needs some special treatment to keep this method as generic as it can be.
             if (ParseOptions.HelpCommandTemplate != null && consoleArgs[0].Equals(ParseOptions.HelpCommandTemplate.Name, StringComparison.InvariantCultureIgnoreCase))
             {
-                var helpCommand = new HelpCommand<TCommand>(possibleCommands, this);
+                var helpCommand = new HelpCommand<TCommand>(allCommands, this);
                 var helpParseResult = ParseArgumentsForCommand(helpCommand, consoleArgs, hasHelpArg);
 
                 if (helpParseResult == ParseResult.Failure)
@@ -358,13 +360,13 @@ namespace TheObtuseAngle.ConsoleUtilities
                 return ParseResult.DisplayedHelp;
             }
 
-            var command = possibleCommands.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
+            var command = allCommands.SingleOrDefault(c => c.Name.Equals(consoleArgs[0], StringComparison.InvariantCultureIgnoreCase));
 
             if (command == null)
             {
                 if (hasHelpArg)
                 {
-                    WriteUsage(possibleCommands);
+                    WriteUsage(allCommands);
                     return ParseResult.DisplayedHelp;
                 }
 
@@ -374,7 +376,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
 
                 ConsoleHelper.WriteLine("Invalid command.");
-                WriteUsage(possibleCommands);
+                WriteUsage(allCommands);
                 return ParseResult.Failure;
             }
 
@@ -506,17 +508,13 @@ namespace TheObtuseAngle.ConsoleUtilities
                 ConsoleHelper.Write("Usage: {0} ", AppDomain.CurrentDomain.FriendlyName);
             }
 
-            var orderedArgs = command.GetOrderedArguments();
+            var orderedArgs = command.Arguments;
             var formatString = maxCommandNameLength.HasValue ? string.Format("{{0}}{{1,-{0}}} ", maxCommandNameLength.Value) : "{0}{1} ";
             ConsoleHelper.Write(formatString, spacer, template.Name);
 
-            if (orderedArgs == null && ParseOptions.ArgumentOrderByFunction != null)
+            if (ParseOptions.ArgumentOrderByFunction != null)
             {
-                orderedArgs = ParseOptions.ArgumentOrderByFunction(command.Arguments);
-            }
-            else
-            {
-                orderedArgs = command.Arguments;
+                orderedArgs = ParseOptions.ArgumentOrderByFunction(command.Arguments).ToList();
             }
 
             if (!isWritingMultipleCommands)

@@ -107,8 +107,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         };
 
-        public static readonly Func<IEnumerable<IArgument>, IEnumerable<IArgument>> DefaultArgumentOrderByFunction =
-            args => args.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name);
+        public static readonly Func<IEnumerable<IArgument>, IEnumerable<IArgument>> DefaultArgumentOrderByFunction = args => args.OrderByDescending(a => a.IsRequired);
         
         public static readonly ParseOptions Defaults = new ParseOptions();
         
@@ -297,7 +296,7 @@ namespace TheObtuseAngle.ConsoleUtilities
         public HelpCommandTemplate HelpCommandTemplate { get; set; }
 
         /// <summary>
-        /// Gets or sets the function to be invoked when ordering arguments for display.  Null is an allowed value.  The default is: args => args.OrderByDescending(a => a.IsRequired).ThenBy(a => a.Name);
+        /// Gets or sets the function to be invoked when ordering arguments for display.  Null is an allowed value.  The default is: args => args.OrderByDescending(a => a.IsRequired);
         /// </summary>
         public Func<IEnumerable<IArgument>, IEnumerable<IArgument>> ArgumentOrderByFunction { get; set; }
 

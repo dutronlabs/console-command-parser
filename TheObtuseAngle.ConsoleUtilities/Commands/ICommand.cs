@@ -34,12 +34,6 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         IList<IArgument> Arguments { get; }
 
         /// <summary>
-        /// Returns the arguments for this command in the order in which they should be displayed.  When deriving from CommandBase the default behavior will return null, which will make the command parser default to the ArgumentOrderByFunction defined in the current ParseOptions.
-        /// </summary>
-        /// <returns>The arguments for this command in the order in which they should be displayed.</returns>
-        IEnumerable<IArgument> GetOrderedArguments();
-
-        /// <summary>
         /// Executes the command and returns true if the command executed successfully, otherwise false.
         /// </summary>
         /// <returns>True if the command executed successfully, otherwise false.</returns>
@@ -49,5 +43,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         /// Writes the usage help for this command to the console.  When deriving from CommandBase the default behavior will be the same as calling the WriteUsage method on a CommandParser&lt;T&gt; instance with the default ParseOptions.
         /// </summary>
         void WriteUsage();
+
+        void OnBeforeParse();
     }
 }
