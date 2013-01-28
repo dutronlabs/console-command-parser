@@ -5,6 +5,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
     public class OptionalValueArgument : Argument
     {
         public OptionalValueArgument()
+            : this(null, (string[])null, null, null)
         {
         }
 
