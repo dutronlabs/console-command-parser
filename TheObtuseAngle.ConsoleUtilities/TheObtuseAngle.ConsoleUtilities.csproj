@@ -57,6 +57,10 @@
     <Compile Include="Commands\HelpCommand.cs" />
     <Compile Include="Commands\HelpCommandTemplate.cs" />
     <Compile Include="Commands\ICommand.cs" />
+    <Compile Include="Composition\ArgumentCompositionInfo.cs" />
+    <Compile Include="Composition\ExportArgumentAttribute.cs" />
+    <Compile Include="Composition\ExportManyArgumentsAttribute.cs" />
+    <Compile Include="Composition\MemberInfoExtensions.cs" />
     <Compile Include="ParseResult.cs" />
     <Compile Include="CommandParseResult.cs" />
     <Compile Include="ConsoleHelperExtensions.cs" />

@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TheObtuseAngle.ConsoleUtilities.Arguments;
+using TheObtuseAngle.ConsoleUtilities.Composition;
 
 namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
     public abstract class CommandBase : CommandTemplate, ICommand
     {
+        private const BindingFlags bindingFlags = BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         private const int defaultOrdinal = int.MaxValue - 1;
-        private readonly IList<IArgument> arguments;
         private MethodInfo writeUsageMethod;
         private Object parserInstance;
         private int ordinal;
@@ -52,11 +54,11 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
             : base(name, title, description)
         {
             this.ordinal = ordinal;
-            this.arguments = new List<IArgument>();
+            this.Arguments = new List<IArgument>();
 
             if (arguments != null)
             {
-                this.arguments.AddRange(arguments);
+                this.Arguments.AddRange(arguments);
             }
         }
 
@@ -66,10 +68,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
             set { this.ordinal = value; }
         }
 
-        public virtual IList<IArgument> Arguments
-        {
-            get { return arguments; }
-        }
+        public List<IArgument> Arguments { get; private set; }
 
         public abstract bool Execute();
 
@@ -80,6 +79,45 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
 
         public virtual void OnBeforeParse()
         {
+        }
+
+        protected virtual IEnumerable<IArgument> OrderComposedArguments(IEnumerable<ArgumentCompositionInfo> argumentCompositionInfo)
+        {
+            return argumentCompositionInfo.OrderByDescending(ci => ci.Argument.IsRequired).ThenBy(ci => ci.InheritanceLevel).Select(ci => ci.Argument);
+        }
+
+        internal void ComposeArguments()
+        {
+            int rank = 0;
+            var typeRankMap = new Dictionary<Type, int>();
+            var argumentCompositionInfo = new List<ArgumentCompositionInfo>();
+            var thisType = GetType();
+
+            for (var type = thisType; type != null; type = type.BaseType)
+            {
+                typeRankMap.Add(type, ++rank);
+            }
+
+            foreach (var member in thisType.GetMembers(bindingFlags).Where(member => member.DeclaringType != null && IsValidMember(member)))
+            {
+                if (member.HasAttribute<ExportArgumentAttribute>())
+                {
+                    var argument = member.GetArgument(this);
+
+                    if (argument == null)
+                    {
+                        continue;
+                    }
+
+                    argumentCompositionInfo.Add(new ArgumentCompositionInfo(typeRankMap[thisType], thisType, argument));
+                }
+                else if (member.HasAttribute<ExportManyArgumentsAttribute>())
+                {
+                    argumentCompositionInfo.AddRange(member.GetManyArguments(this).Select(argument => new ArgumentCompositionInfo(typeRankMap[thisType], thisType, argument)));
+                }
+            }
+
+            Arguments = OrderComposedArguments(argumentCompositionInfo).ToList();
         }
 
         private Object ParserInstance
@@ -99,6 +137,11 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         private MethodInfo WriteUsageMethod
         {
             get { return writeUsageMethod ?? (writeUsageMethod = ParserInstance.GetType().GetMethod("WriteUsage", new[] { GetType() })); }
+        }
+
+        private static bool IsValidMember(MemberInfo member)
+        {
+            return member.MemberType == MemberTypes.Property || member.MemberType == MemberTypes.Field || member.MemberType == MemberTypes.Method;
         }
     }
 }

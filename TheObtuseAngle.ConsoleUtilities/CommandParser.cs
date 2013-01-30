@@ -329,7 +329,17 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             ParseIncludedArguments(consoleArgs);
             var allCommands = possibleCommands.ToList();
-            allCommands.ForEach(cmd => cmd.OnBeforeParse());
+            
+            foreach (var cmd in allCommands)
+            {
+                cmd.OnBeforeParse();
+
+                var commandBase = cmd as CommandBase;
+                if (ParseOptions.UseArgumentComposition && commandBase != null)
+                {
+                    commandBase.ComposeArguments();
+                }
+            }
 
             if (consoleArgs.Length == 0)
             {

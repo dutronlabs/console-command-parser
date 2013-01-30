@@ -31,7 +31,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         /// <summary>
         /// The collection of arguments for this command.
         /// </summary>
-        IList<IArgument> Arguments { get; }
+        List<IArgument> Arguments { get; }
 
         /// <summary>
         /// Executes the command and returns true if the command executed successfully, otherwise false.

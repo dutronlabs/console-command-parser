@@ -120,6 +120,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             EnableValueOnlyParsing = false;
             InvertInteractiveModeArgument = false;
             WriteBlankLineBetweenEachCommand = false;
+            UseArgumentComposition = false;
             OutputWriter = Console.Out;
             ArgumentValueIndicator = DefaultArgumentValueIndicator;
             RequiredArgumentIndicator = DefaultRequiredArgumentIndicator;
@@ -180,6 +181,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// When true, the interactive mode argument template is not null, and the interactive mode argument is supplied then its value will be inversed.  In other words, the presence of this argument changes to be non-interactive.  The default is false.
         /// </summary>
         public bool InvertInteractiveModeArgument { get; set; }
+
+        /// <summary>
+        /// When true, the parser will dynamically populate the Arguments collection of each command deriving from CommandBase with all arguments exported from derived types using the ExportArgument and ExportManyArgument attributes.  The default is false.
+        /// </summary>
+        public bool UseArgumentComposition { get; set; }
 
         /// <summary>
         /// Gets or sets the text writer to use for output.  The default is Console.Out.
