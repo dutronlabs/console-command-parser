@@ -81,9 +81,9 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         {
         }
 
-        protected virtual IEnumerable<IArgument> OrderComposedArguments(IEnumerable<ArgumentCompositionInfo> argumentCompositionInfo)
+        protected virtual IEnumerable<ArgumentCompositionInfo> OrderComposedArguments(IEnumerable<ArgumentCompositionInfo> argumentCompositionInfo)
         {
-            return argumentCompositionInfo.OrderByDescending(ci => ci.Argument.IsRequired).ThenBy(ci => ci.InheritanceLevel).Select(ci => ci.Argument);
+            return argumentCompositionInfo.OrderByDescending(ci => ci.Argument.IsRequired).ThenBy(ci => ci.InheritanceLevel);
         }
 
         internal void ComposeArguments()
@@ -91,14 +91,13 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
             int rank = 0;
             var typeRankMap = new Dictionary<Type, int>();
             var argumentCompositionInfo = new List<ArgumentCompositionInfo>();
-            var thisType = GetType();
 
-            for (var type = thisType; type != null; type = type.BaseType)
+            for (var type = GetType(); type != null; type = type.BaseType)
             {
                 typeRankMap.Add(type, ++rank);
             }
 
-            foreach (var member in thisType.GetMembers(bindingFlags).Where(member => member.DeclaringType != null && IsValidMember(member)))
+            foreach (var member in GetType().GetMembers(bindingFlags).Where(member => member.DeclaringType != null && IsValidMember(member)))
             {
                 if (member.HasAttribute<ExportArgumentAttribute>())
                 {
@@ -109,15 +108,16 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
                         continue;
                     }
 
-                    argumentCompositionInfo.Add(new ArgumentCompositionInfo(typeRankMap[thisType], thisType, argument));
+                    argumentCompositionInfo.Add(new ArgumentCompositionInfo(typeRankMap[member.DeclaringType], member.DeclaringType, argument));
                 }
                 else if (member.HasAttribute<ExportManyArgumentsAttribute>())
                 {
-                    argumentCompositionInfo.AddRange(member.GetManyArguments(this).Select(argument => new ArgumentCompositionInfo(typeRankMap[thisType], thisType, argument)));
+                    var localMemberInfo = member;
+                    argumentCompositionInfo.AddRange(member.GetManyArguments(this).Select(argument => new ArgumentCompositionInfo(typeRankMap[localMemberInfo.DeclaringType], localMemberInfo.DeclaringType, argument)));
                 }
             }
 
-            Arguments = OrderComposedArguments(argumentCompositionInfo).ToList();
+            Arguments = OrderComposedArguments(argumentCompositionInfo).Select(ci => ci.Argument).ToList();
         }
 
         private Object ParserInstance
