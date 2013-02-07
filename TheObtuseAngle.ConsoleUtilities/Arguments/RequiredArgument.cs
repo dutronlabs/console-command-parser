@@ -30,7 +30,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         }
 
         public RequiredArgument(string name, string[] aliases, string description, Action<string> valueSetter)
-            : base(name, aliases, description, false, true, valueSetter)
+            : base(name, aliases, description, false, true, 0, valueSetter)
         {
         }
     }

@@ -52,6 +52,7 @@
     <Compile Include="Arguments\RequiredArgumentTemplate.cs" />
     <Compile Include="Arguments\RequiredValueArgument.cs" />
     <Compile Include="Arguments\RequiredValueArgumentTemplate.cs" />
+    <Compile Include="CommandParser.cs" />
     <Compile Include="Commands\CommandBase.cs" />
     <Compile Include="Commands\CommandTemplate.cs" />
     <Compile Include="Commands\HelpCommand.cs" />
@@ -64,7 +65,7 @@
     <Compile Include="ParseResult.cs" />
     <Compile Include="CommandParseResult.cs" />
     <Compile Include="ConsoleHelperExtensions.cs" />
-    <Compile Include="CommandParser.cs" />
+    <Compile Include="ArgumentParser.cs" />
     <Compile Include="ConsoleHelper.cs" />
     <Compile Include="CollectionExtensions.cs" />
     <Compile Include="EnumerableExtensions.cs" />

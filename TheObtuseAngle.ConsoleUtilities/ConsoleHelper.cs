@@ -200,28 +200,10 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             for (int i = 0; i < consoleArgs.Length; i++)
             {
-                string argName;
                 string argValue = null;
-                bool needsIncrement = false;
-                Func<string> argValueProducer;
-
-                if (Options.ArgumentValueSeparator == ' ')
-                {
-                    int index = i;
-                    argName = consoleArgs[i];
-                    argValueProducer =
-                        () =>
-                        {
-                            needsIncrement = true;
-                            return index + 1 < consoleArgs.Length ? consoleArgs[index + 1] : null;
-                        };
-                }
-                else
-                {
-                    var argParts = consoleArgs[i].Split(Options.ArgumentValueSeparator);
-                    argName = argParts[0];
-                    argValueProducer = () => argParts.Length > 1 ? argParts[1] : null;
-                }
+                string[] argParts = consoleArgs[i].Split(Options.ArgumentValueSeparator);
+                string argName = Options.ArgumentValueSeparator == ' ' ? consoleArgs[i] : argParts[0];
+                int incrementCount = 0;
 
                 var matchingArg = possibleArguments.FirstOrDefault(a =>
                     a.Name.Equals(argName, StringComparison.InvariantCultureIgnoreCase) ||
@@ -234,7 +216,15 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                 if (matchingArg.RequiresValue)
                 {
-                    argValue = argValueProducer();
+                    if (Options.ArgumentValueSeparator == ' ')
+                    {
+                        incrementCount = matchingArg.NumberOfValueArgs;
+                        argValue = i + incrementCount < consoleArgs.Length ? string.Join(" ", consoleArgs.Skip(i + 1).Take(incrementCount)) : null;
+                    }
+                    else
+                    {
+                        argValue = argParts.Length > 1 ? argParts[1] : null;
+                    }
 
                     if (string.IsNullOrWhiteSpace(argValue) && interactiveMode && Options.IsUsingConsoleOutput)
                     {
@@ -255,11 +245,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
                 
                 parsedArgs.Add(matchingArg);
-
-                if (needsIncrement)
-                {
-                    i++;
-                }
+                i += incrementCount;
             }
 
             if (interactiveMode && Options.IsUsingConsoleOutput && (Options.HelpArgumentTemplate == null || !consoleArgs.HasArgument(Options.HelpArgumentTemplate)))

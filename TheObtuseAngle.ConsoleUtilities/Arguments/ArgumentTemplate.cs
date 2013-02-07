@@ -7,18 +7,26 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         private string description;
         private bool isRequired;
         private bool requiresValue;
+        private int numberOfValueArgs;
 
         public ArgumentTemplate()
+            : this(null, null, null, false, false, 1)
         {
         }
 
         public ArgumentTemplate(string name, string[] aliases, string description, bool requiresValue, bool isRequired)
+            : this(name, aliases, description, requiresValue, isRequired, 1)
+        {
+        }
+
+        public ArgumentTemplate(string name, string[] aliases, string description, bool requiresValue, bool isRequired, int numberOfValueArgs)
         {
             this.name = name;
             this.aliases = aliases;
             this.description = description;
             this.requiresValue = requiresValue;
             this.isRequired = isRequired;
+            this.numberOfValueArgs = numberOfValueArgs;
         }
 
         public virtual string Name
@@ -49,6 +57,12 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         {
             get { return this.isRequired; }
             set { this.isRequired = value; }
+        }
+
+        public virtual int NumberOfValueArgs
+        {
+            get { return this.numberOfValueArgs; }
+            set { this.numberOfValueArgs = value; }
         }
     }
 }

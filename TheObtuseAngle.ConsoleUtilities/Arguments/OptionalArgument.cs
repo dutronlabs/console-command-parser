@@ -30,7 +30,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         }
 
         public OptionalArgument(string name, string[] aliases, string description, Action<string> valueSetter)
-            : base(name, aliases, description, false, false, valueSetter)
+            : base(name, aliases, description, false, false, 0, valueSetter)
         {
         }
     }

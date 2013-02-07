@@ -33,11 +33,7 @@ namespace TheObtuseAngle.ParseArgsConsole
         {
             try
             {
-                var options = new ParseOptions
-                {
-                    ArgumentValueSeparator = '='
-                };
-                var parser = new CommandParser(options);
+                var parser = new ArgumentParser();
 
                 if (parser.ParseArguments(consoleArgs, BuildAppArguments()) != ParseResult.Success)
                 {
@@ -62,14 +58,22 @@ namespace TheObtuseAngle.ParseArgsConsole
         {
             return new IArgument[]
             {
-                new Argument("-scriptBase", "-sb", "The base path of the folder that contains the upgrade scripts", true, true, val => scriptBase = val),
-                new Argument("-environment", "-e", "The name of the environment to use for token switching", true, true, val => environment = val),
-                new Argument("-instance", "-i", "The SQL Server instance name to connect to.  This argument can be specified multiple times to operate against multiple instances.", true, true, val => instances.Add(val)),
-                new Argument("-user", "-u", "The SQL Server user to connect as", true, true, val => user = val),
-                new Argument("-password", "-pw", "The password of the SQL Server user", true, true, val => password = val),
-                new Argument("-restoreOnly", "-ro", "Whether or not to bypass the upgrade and ONLY restore the DBs", false, false, val => restoreOnly = true),
-                new Argument("-backupOnly", "-bo", "Whether or not to bypass the upgrade and ONLY backup the DBs", false, false, val => backupOnly = true)
+                new RequiredValueArgument("-scriptBase", "-sb", "The base path of the folder that contains the upgrade scripts", val => scriptBase = val),
+                new RequiredValueArgument("-environment", "-e", "The name of the environment to use for token switching", val => environment = val),
+                new RequiredValueArgument("-instances", "-i", "The three (3) SQL Server instances to connect to.", 3, ParseInstancesArgument),
+                new RequiredValueArgument("-user", "-u", "The SQL Server user to connect as", val => user = val),
+                new RequiredValueArgument("-password", "-pw", "The password of the SQL Server user", val => password = val),
+                new OptionalArgument("-restoreOnly", "-ro", "Whether or not to bypass the upgrade and ONLY restore the DBs", _ => restoreOnly = true),
+                new OptionalArgument("-backupOnly", "-bo", "Whether or not to bypass the upgrade and ONLY backup the DBs", _ => backupOnly = true)
             };
+        }
+
+        private void ParseInstancesArgument(string rawInstances)
+        {
+            foreach (var instance in rawInstances.Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries))
+            {
+                instances.Add(instance);
+            }
         }
     }
 }

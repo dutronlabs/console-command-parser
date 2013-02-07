@@ -8,7 +8,7 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         }
 
         public RequiredArgumentTemplate(string name, string[] aliases, string description)
-            : base(name, aliases, description, false, true)
+            : base(name, aliases, description, false, true, 0)
         {
         }
     }

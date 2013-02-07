@@ -14,6 +14,8 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
 
         bool IsRequired { get; set; }
 
+        int NumberOfValueArgs { get; set; }
+
         Action<string> ValueSetter { get; set; }
     }
 }
