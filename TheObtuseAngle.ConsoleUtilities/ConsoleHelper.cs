@@ -127,6 +127,11 @@ namespace TheObtuseAngle.ConsoleUtilities
             WriteWrapped(Output, textToWrap, offsetOverride);
         }
 
+        public static void WriteTable<T>(IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        {
+            WriteTable(Output, items, rowProducer);
+        }
+
         private static void Write(string format, ConsoleColor color, bool newLine, params object[] args)
         {
             Write(Output, format, color, newLine, args);
@@ -186,6 +191,47 @@ namespace TheObtuseAngle.ConsoleUtilities
                 {
                     Write(outputOverride, lineBuilder.ToString(), Options.OutputConsoleColor, false);
                 }
+            }
+        }
+
+        public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        {
+            // I don't think there's any way around multiple iterations here since I first need to figure out the number of columns
+            // and the maximum length for each column.  So, the best I can do is force the enumeration once in case it is expensive.
+            var itemList = items.ToList();
+            var rows = new List<string[]>();
+            var formatBuilder = new StringBuilder();
+            int columnCount = 0;
+
+            foreach (var item in itemList)
+            {
+                var itemRows = rowProducer(item).ToArray();
+                rows.Add(itemRows);
+
+                if (itemRows.Length > columnCount)
+                {
+                    columnCount = itemRows.Length;
+                }
+            }
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                var maxLength = rows.Select(r => r.Length > i ? r[i] : string.Empty).Max(s => s.Length);
+                formatBuilder.AppendFormat("{{{0},-{1}}} ", i, maxLength);
+            }
+
+            string format = formatBuilder.ToString();
+
+            foreach (var row in rows)
+            {
+                var columnValues = row.ToList();
+
+                while (columnValues.Count < columnCount)
+                {
+                    columnValues.Add(string.Empty);
+                }
+
+                outputOverride.WriteLine(format, columnValues.ToArray());
             }
         }
 

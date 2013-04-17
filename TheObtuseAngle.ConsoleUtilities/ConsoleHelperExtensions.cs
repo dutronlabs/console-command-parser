@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TheObtuseAngle.ConsoleUtilities.Arguments;
@@ -42,6 +43,11 @@ namespace TheObtuseAngle.ConsoleUtilities
         public static void WriteWrapped(this TextWriter output, string textToWrap, int? offsetOverride = null)
         {
             ConsoleHelper.WriteWrapped(output, textToWrap, offsetOverride);
+        }
+
+        public static void WriteTable<T>(this TextWriter output, IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        {
+            ConsoleHelper.WriteTable(output, items, rowProducer);
         }
 
         public static ArgumentParseResult ParseArguments(this string[] consoleArgs, params IArgument[] possibleArguments)
