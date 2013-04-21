@@ -127,9 +127,24 @@ namespace TheObtuseAngle.ConsoleUtilities
             WriteWrapped(Output, textToWrap, offsetOverride);
         }
 
-        public static void WriteTable<T>(IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        public static void WriteTable(IEnumerable<IEnumerable<string>> dataSource)
         {
-            WriteTable(Output, items, rowProducer);
+            WriteTable(Output, null, dataSource, o => o);
+        }
+
+        public static void WriteTable(IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<IEnumerable<string>> dataSource)
+        {
+            WriteTable(Output, columnDefinitions, dataSource, o => o);
+        }
+
+        public static void WriteTable<T>(IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
+        {
+            WriteTable(Output, null, dataSource, rowProducer);
+        }
+
+        public static void WriteTable<T>(IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
+        {
+            WriteTable(Output, columnDefinitions, dataSource, rowProducer);
         }
 
         private static void Write(string format, ConsoleColor color, bool newLine, params object[] args)
@@ -194,18 +209,43 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
-        public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<T> dataSource, Func<T, IEnumerable<object>> rowProducer)
         {
-            // I don't think there's any way around multiple iterations here since I first need to figure out the number of columns
-            // and the maximum length for each column.  So, the best I can do is force the enumeration once in case it is expensive.
-            var itemList = items.ToList();
-            var rows = new List<string[]>();
-            var formatBuilder = new StringBuilder();
-            int columnCount = 0;
+            WriteTable(outputOverride, null, dataSource, rowProducer);
+        }
 
-            foreach (var item in itemList)
+        public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<T> dataSource, Func<T, IEnumerable<object>> rowProducer)
+        {
+            if (dataSource == null)
             {
-                var itemRows = rowProducer(item).ToArray();
+                throw new ArgumentNullException("dataSource");
+            }
+            if (rowProducer == null)
+            {
+                throw new ArgumentNullException("rowProducer");
+            }
+            if (outputOverride == null)
+            {
+                outputOverride = output;
+            }
+
+            var columnList = (columnDefinitions ?? Enumerable.Empty<ColumnDefinition>()).ToList();
+            var data = dataSource.ToList();
+            var columnWidths = new List<int>();
+            var maxTotalWidth = ReferenceEquals(outputOverride, Console.Out) ? Console.BufferWidth : int.MaxValue;
+            var rows = new List<string[]>();
+            var columnCount = columnList.Count;
+
+            // If we have a header row, add that as the first row in the table.
+            if (columnCount > 0)
+            {
+                rows.Add(columnList.Select(c => c.Header).ToArray());
+            }
+
+            // Now get all the table data from the data source.
+            foreach (var item in data)
+            {
+                var itemRows = rowProducer(item).Select(o => o.ToString()).ToArray();
                 rows.Add(itemRows);
 
                 if (itemRows.Length > columnCount)
@@ -214,24 +254,97 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
+            // Now figure out what the column widths are.
+            // Initial column widths are longest item in that column.
             for (int i = 0; i < columnCount; i++)
             {
-                var maxLength = rows.Select(r => r.Length > i ? r[i] : string.Empty).Max(s => s.Length);
-                formatBuilder.AppendFormat("{{{0},-{1}}} ", i, maxLength);
+                columnWidths.Add(rows.Select(r => r.Length > i ? r[i] : string.Empty).Max(s => s.Length));
             }
 
-            string format = formatBuilder.ToString();
+            // Calculate the actual column width if the total width is greater than the max possible width.
+            var actualTotalWidth = columnWidths.Sum();
+            maxTotalWidth = (maxTotalWidth - columnCount) + 1;
 
-            foreach (var row in rows)
+            if (actualTotalWidth > maxTotalWidth)
             {
-                var columnValues = row.ToList();
+                int remainingWidth = maxTotalWidth;
+                var dynamicColumnIndicies = new List<int>();
 
-                while (columnValues.Count < columnCount)
+                for (int i = 0; i < columnCount; i++)
                 {
-                    columnValues.Add(string.Empty);
+                    var definition = columnList.ElementAtOrDefault(i);
+                    var mode = definition == null ? ColumnWidthMode.Auto : definition.WidthMode;
+
+                    if (mode == ColumnWidthMode.Fixed && definition.Width <= 0)
+                    {
+                        mode = ColumnWidthMode.Auto;
+                    }
+
+                    switch (mode)
+                    {
+                        case ColumnWidthMode.Auto:
+                            columnWidths[i] = (columnWidths[i] * maxTotalWidth) / actualTotalWidth;
+                            remainingWidth -= columnWidths[i];
+                            break;
+                        case ColumnWidthMode.Dynamic:
+                            dynamicColumnIndicies.Add(i);
+                            break;
+                        case ColumnWidthMode.Max:
+                            remainingWidth -= columnWidths[i];
+                            break;
+                        case ColumnWidthMode.Fixed:
+                            columnWidths[i] = definition.Width;
+                            remainingWidth -= definition.Width;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
 
-                outputOverride.WriteLine(format, columnValues.ToArray());
+                if (dynamicColumnIndicies.Any())
+                {
+                    var dynamicWidth = remainingWidth / dynamicColumnIndicies.Count;
+                    dynamicColumnIndicies.ForEach(i => columnWidths[i] = dynamicWidth);
+                }
+            }
+
+            // Build the format string to use for each row.
+            var rowFormatParts = new List<string>();
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                rowFormatParts.Add(string.Format("{{{0},-{1}}}", i, columnWidths[i]));
+            }
+
+            var rowFormat = string.Join(" ", rowFormatParts);
+
+            // Write the table
+            foreach (var row in rows)
+            {
+                while (row.Any(s => !string.IsNullOrWhiteSpace(s)))
+                {
+                    var formatParams = new string[columnCount];
+
+                    for (int i = 0; i < columnCount; i++)
+                    {
+                        var column = row[i];
+                        var width = columnWidths[i];
+
+                        if (column.Length > width)
+                        {
+                            row[i] = column.Substring(width);
+                            formatParams[i] = column.Substring(0, width);
+                        }
+                        else
+                        {
+                            row[i] = string.Empty;
+                            formatParams[i] = column;
+                        }
+                    }
+
+                    var line = string.Format(rowFormat, formatParams);
+                    Write(line);
+                }
             }
         }
 

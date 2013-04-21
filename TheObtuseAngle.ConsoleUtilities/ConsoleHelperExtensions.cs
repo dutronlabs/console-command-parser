@@ -45,9 +45,24 @@ namespace TheObtuseAngle.ConsoleUtilities
             ConsoleHelper.WriteWrapped(output, textToWrap, offsetOverride);
         }
 
-        public static void WriteTable<T>(this TextWriter output, IEnumerable<T> items, Func<T, IEnumerable<string>> rowProducer)
+        public static void WriteTable(this TextWriter output, IEnumerable<IEnumerable<string>> dataSource)
         {
-            ConsoleHelper.WriteTable(output, items, rowProducer);
+            ConsoleHelper.WriteTable(output, null, dataSource, o => o);
+        }
+
+        public static void WriteTable(this TextWriter output, IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<IEnumerable<string>> dataSource)
+        {
+            ConsoleHelper.WriteTable(output, columnDefinitions, dataSource, o => o);
+        }
+
+        public static void WriteTable<T>(this TextWriter output, IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
+        {
+            ConsoleHelper.WriteTable(output, null, dataSource, rowProducer);
+        }
+
+        public static void WriteTable<T>(this TextWriter output, IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
+        {
+            ConsoleHelper.WriteTable(output, columnDefinitions, dataSource, rowProducer);
         }
 
         public static ArgumentParseResult ParseArguments(this string[] consoleArgs, params IArgument[] possibleArguments)

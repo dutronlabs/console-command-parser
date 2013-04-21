@@ -52,6 +52,7 @@
     <Compile Include="Arguments\RequiredArgumentTemplate.cs" />
     <Compile Include="Arguments\RequiredValueArgument.cs" />
     <Compile Include="Arguments\RequiredValueArgumentTemplate.cs" />
+    <Compile Include="ColumnDefinition.cs" />
     <Compile Include="CommandParser.cs" />
     <Compile Include="Commands\CommandBase.cs" />
     <Compile Include="Commands\CommandTemplate.cs" />
