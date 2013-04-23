@@ -13,7 +13,7 @@ namespace TheObtuseAngle.TestConsole
         {
             var clouds = new[]
             {
-                new Cloud("Development", "http://apps.apprenda.emonster", "This is the development cloud that should be used while apps are in development.", 1),
+                new Cloud("Development", "http://apps.apprenda.emonster", "This is the development cloud that should be used while apps are in development. And here is another sentence just for fun.", 1),
                 new Cloud("Testing", "http://apps.apprenda.miller", "Use when apps are ready for QA.", 2),
                 new Cloud("Staging", "http://apps.apprenda.staging", "Apps go here when they are ready for production.", 2),
                 new Cloud("Production", "http://apps.apprenda.production", "Where production apps run.", 5)
@@ -24,7 +24,7 @@ namespace TheObtuseAngle.TestConsole
                 new ColumnDefinition("Name", ColumnWidthMode.Max),
                 new ColumnDefinition("Url"),
                 new ColumnDefinition("Description", ColumnWidthMode.Dynamic),
-                new ColumnDefinition("Node Count")
+                new ColumnDefinition("Node Count", 5)
             };
 
             Console.WriteLine("All Clouds:");

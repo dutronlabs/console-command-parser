@@ -332,8 +332,29 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                         if (column.Length > width)
                         {
-                            row[i] = column.Substring(width);
-                            formatParams[i] = column.Substring(0, width);
+                            int length = 0;
+                            var words = column.Split(' ');
+
+                            if (words.Any(w => w.Length > width))
+                            {
+                                // If there are any words that are longer than the total width of the column then we will need
+                                // to wrap in the middle of a word no matter what.  Rather than deal with the complexities introduced
+                                // by that scenario just take the quick approach here and don't try to wrap on word boundaries.
+                                row[i] = column.Substring(width);
+                                formatParams[i] = column.Substring(0, width);
+                            }
+                            else
+                            {
+                                // The text in the column is too wide, but all the individual words can fit.
+                                // This means we can be nice and wrap on word boundaries.
+                                formatParams[i] = string.Join(" ", words.TakeWhile(
+                                    word =>
+                                    {
+                                        length += word.Length + 1; // add in the space that will be added back in after every word
+                                        return length <= width;
+                                    }));
+                                row[i] = column.Substring(formatParams[i].Length).TrimStart();
+                            }
                         }
                         else
                         {
