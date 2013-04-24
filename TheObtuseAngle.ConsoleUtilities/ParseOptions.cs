@@ -61,17 +61,48 @@ namespace TheObtuseAngle.ConsoleUtilities
     /// </summary>
     public sealed class ParseOptions
     {
+        /// <summary>
+        /// The default argument value separator. This is the character used to separate an argument from its value on the command line. Defined as ' '.
+        /// </summary>
         public const char DefaultArgumentValueSeparator = ' ';
+
+        /// <summary>
+        /// The default string to use when writing usage help to indicate an argument value. Defined as "&lt;value&gt;".
+        /// </summary>
         public const string DefaultArgumentValueIndicator = "<value>";
+
+        /// <summary>
+        /// The default string to use when writing usage help to indicate an argument is required. Defined as "(*) ".
+        /// </summary>
         public const string DefaultRequiredArgumentIndicator = "(*) ";
+
+        /// <summary>
+        /// The default string format to use when writing usage help to denote a required argument. Defined as "&gt;{0}&lt;".
+        /// </summary>
         public const string DefaultRequiredArgumentFormat = "<{0}>";
+
+        /// <summary>
+        /// The default string format to use when writing usage help to denote an optional argument. Defined as "[{0}]".
+        /// </summary>
         public const string DefaultOptionalArgumentFormat = "[{0}]";
+
+        /// <summary>
+        /// The default debug flag. Defined as --debug.
+        /// </summary>
         public const string DefaultDebugFlag = "--debug";
+
+        /// <summary>
+        /// The default time (in seconds) to wait when the debug flag is given on the command line and the <see cref="DebugFlagAction"/> property is set to <see cref="ConsoleUtilities.DebugFlagAction.ThreadSleep"/>.
+        /// </summary>
         public const int DefaultThreadSleepTime = 10;
+        
         private ArgumentTemplate helpArgumentTemplate;
         private ArgumentTemplate quietModeArgumentTemplate;
         private ArgumentTemplate interactiveModeArgumentTemplate;
 
+        /// <summary>
+        /// The default quiet mode argument template. Defined as -quiet, -q, /q.
+        /// </summary>
         public static readonly ArgumentTemplate DefaultQuietModeArgumentTemplate = new ArgumentTemplate
         {
             Name = "-quiet",
@@ -79,6 +110,9 @@ namespace TheObtuseAngle.ConsoleUtilities
             Description = "Suppresses all output"
         };
 
+        /// <summary>
+        /// The default help argument template. Defined as -help, -?, /?.
+        /// </summary>
         public static readonly ArgumentTemplate DefaultHelpArgumentTemplate = new ArgumentTemplate
         {
             Name = "-help",
@@ -86,12 +120,18 @@ namespace TheObtuseAngle.ConsoleUtilities
             Description = "Displays this usage information"
         };
 
+        /// <summary>
+        /// The default interactive mode argument template. Defined as -interactive.
+        /// </summary>
         public static readonly ArgumentTemplate DefaultInteractiveModeArgumentTemplate = new ArgumentTemplate
         {
             Name = "-interactive",
             Description = "When provided, the user will be prompted for missing required arguments"
         };
 
+        /// <summary>
+        /// The default help command template.
+        /// </summary>
         public static readonly HelpCommandTemplate DefaultHelpCommandTemplate = new HelpCommandTemplate
         {
             Name = "Help",
@@ -107,10 +147,19 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         };
 
+        /// <summary>
+        /// The default argument order by function. Defined as: args => args.OrderByDescending(a => a.IsRequired)
+        /// </summary>
         public static readonly Func<IEnumerable<IArgument>, IEnumerable<IArgument>> DefaultArgumentOrderByFunction = args => args.OrderByDescending(a => a.IsRequired);
         
+        /// <summary>
+        /// The default instance of the <see cref="ParseOptions"/> class.
+        /// </summary>
         public static readonly ParseOptions Defaults = new ParseOptions();
         
+        /// <summary>
+        /// Constructs a new instance of the <see cref="ParseOptions"/> class using the default values.
+        /// </summary>
         public ParseOptions()
         {
             ArgumentValueSeparator = DefaultArgumentValueSeparator;
@@ -138,6 +187,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             ErrorConsoleColor = ConsoleColor.Red;
             PromptConsoleColor = ConsoleColor.White;
             ArgumentOrderByFunction = DefaultArgumentOrderByFunction;
+            TableOptions = TableOptions.Defaults;
 #if DEBUG
             WriteExceptionsToConsole = true;
             EnableDebugFlag = true;
@@ -307,11 +357,16 @@ namespace TheObtuseAngle.ConsoleUtilities
         public Func<IEnumerable<IArgument>, IEnumerable<IArgument>> ArgumentOrderByFunction { get; set; }
 
         /// <summary>
+        /// Gets or sets the table options to use when writing tabular data to the console.
+        /// </summary>
+        public TableOptions TableOptions { get; set; }
+
+        /// <summary>
         /// Gets a value indicating whether or not the parser is using Console.Out as the output stream.
         /// </summary>
         internal bool IsUsingConsoleOutput
         {
-            get { return object.ReferenceEquals(OutputWriter, Console.Out); }
+            get { return ReferenceEquals(OutputWriter, Console.Out); }
         }
 
         internal event Action<ArgumentTemplateType, ArgumentTemplate> ArgumentTemplateChanged;

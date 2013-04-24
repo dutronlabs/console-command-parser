@@ -55,7 +55,7 @@
         /// Constructs a new ColumnDefinition instance with the given header and fixed width.
         /// </summary>
         public ColumnDefinition(string header, int width)
-            : this(header, ColumnWidthMode.Fixed)
+            : this(header, ColumnWidthMode.Fixed, 0)
         {
             Width = width;
         }
@@ -64,9 +64,18 @@
         /// Constructs a new ColumnDefinition instance with the given header and width mode.
         /// </summary>
         public ColumnDefinition(string header, ColumnWidthMode widthMode)
+            : this(header, widthMode, 0)
+        {
+        }
+
+        /// <summary>
+        /// Constructs a new ColumnDefinition instance with the given header, width mode, an minimum width.
+        /// </summary>
+        public ColumnDefinition(string header, ColumnWidthMode widthMode, int minWidth)
         {
             Header = header;
             WidthMode = widthMode;
+            MinWidth = minWidth;
         }
 
         /// <summary>
@@ -81,6 +90,11 @@
         /// If the width mode is set to <see cref="ColumnWidthMode.Fixed"/> but the <see cref="Width"/> property is less than or equal to zero then the automatic width mode will be used instead.
         /// </remarks>
         public ColumnWidthMode WidthMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the minimum width to be used for this column. This is essentially an override and applies to any width mode.
+        /// </summary>
+        public int MinWidth { get; set; }
 
         /// <summary>
         /// Gets or sets the fixed width of the column. This value is only used when the <see cref="WidthMode"/> property is set to <see cref="ColumnWidthMode.Fixed"/>.

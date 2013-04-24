@@ -229,16 +229,19 @@ namespace TheObtuseAngle.ConsoleUtilities
                 outputOverride = output;
             }
 
+            var isUsingConsoleOutput = ReferenceEquals(outputOverride, Console.Out);
             var columnList = (columnDefinitions ?? Enumerable.Empty<ColumnDefinition>()).ToList();
             var data = dataSource.ToList();
             var columnWidths = new List<int>();
-            var maxTotalWidth = ReferenceEquals(outputOverride, Console.Out) ? Console.BufferWidth : int.MaxValue;
+            var maxTotalWidth = isUsingConsoleOutput ? Console.BufferWidth : int.MaxValue;
             var rows = new List<string[]>();
             var columnCount = columnList.Count;
+            var hasHeaderRow = false;
 
             // If we have a header row, add that as the first row in the table.
             if (columnCount > 0)
             {
+                hasHeaderRow = true;
                 rows.Add(columnList.Select(c => c.Header).ToArray());
             }
 
@@ -317,6 +320,7 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             var rowFormat = string.Join(" ", rowFormatParts);
+            var rowNum = 1;
 
             // Write the table
             foreach (var row in rows)
@@ -363,9 +367,43 @@ namespace TheObtuseAngle.ConsoleUtilities
                         }
                     }
 
+                    if (rowNum % 2 != 0)
+                    {
+                        SetConsoleColor(hasHeaderRow ? Options.TableOptions.HeaderRowColor : Options.TableOptions.RowColor, isUsingConsoleOutput);
+                    }
+                    else if (Options.TableOptions.AlternateRowColor)
+                    {
+                        SetConsoleColor(Options.TableOptions.AlternatingRowColor, isUsingConsoleOutput);
+                    }
+
                     var line = string.Format(rowFormat, formatParams);
-                    Write(line);
+                    outputOverride.Write(line);
+
+                    if (Options.TableOptions.WriteEmptyLineBetweenRows)
+                    {
+                        outputOverride.WriteLine();
+                    }
                 }
+
+                rowNum++;
+            }
+
+            ResetConsoleColor(isUsingConsoleOutput);
+        }
+
+        private static void SetConsoleColor(ConsoleColor color, bool isUsingConsoleOutput = true)
+        {
+            if (isUsingConsoleOutput)
+            {
+                Console.ForegroundColor = color;
+            }
+        }
+
+        private static void ResetConsoleColor(bool isUsingConsoleOutput = true)
+        {
+            if (isUsingConsoleOutput)
+            {
+                Console.ResetColor();
             }
         }
 

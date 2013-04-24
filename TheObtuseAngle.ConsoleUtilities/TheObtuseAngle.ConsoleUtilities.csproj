@@ -72,6 +72,7 @@
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="ParseOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TableOptions.cs" />
     <Compile Include="WriteUsageOverrides.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
