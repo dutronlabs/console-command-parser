@@ -176,7 +176,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         public static void WriteWrapped(TextWriter outputOverride, string textToWrap, int? offsetOverride = null)
         {
-            if (!object.ReferenceEquals(outputOverride, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
+            if (!ReferenceEquals(outputOverride, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
             {
                 Write(outputOverride, textToWrap, Options.OutputConsoleColor, false);
             }
@@ -268,47 +268,11 @@ namespace TheObtuseAngle.ConsoleUtilities
             var actualTotalWidth = columnWidths.Sum();
             maxTotalWidth = (maxTotalWidth - columnCount) + 1;
 
+            // If we cannot give every column the max width it needs then scale the table columns according to
+            // the column definitions and global defaults.
             if (actualTotalWidth > maxTotalWidth)
             {
-                int remainingWidth = maxTotalWidth;
-                var dynamicColumnIndicies = new List<int>();
-
-                for (int i = 0; i < columnCount; i++)
-                {
-                    var definition = columnList.ElementAtOrDefault(i);
-                    var mode = definition == null ? ColumnWidthMode.Auto : definition.WidthMode;
-
-                    if (mode == ColumnWidthMode.Fixed && definition.Width <= 0)
-                    {
-                        mode = ColumnWidthMode.Auto;
-                    }
-
-                    switch (mode)
-                    {
-                        case ColumnWidthMode.Auto:
-                            columnWidths[i] = (columnWidths[i] * maxTotalWidth) / actualTotalWidth;
-                            remainingWidth -= columnWidths[i];
-                            break;
-                        case ColumnWidthMode.Dynamic:
-                            dynamicColumnIndicies.Add(i);
-                            break;
-                        case ColumnWidthMode.Max:
-                            remainingWidth -= columnWidths[i];
-                            break;
-                        case ColumnWidthMode.Fixed:
-                            columnWidths[i] = definition.Width;
-                            remainingWidth -= definition.Width;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-                }
-
-                if (dynamicColumnIndicies.Any())
-                {
-                    var dynamicWidth = remainingWidth / dynamicColumnIndicies.Count;
-                    dynamicColumnIndicies.ForEach(i => columnWidths[i] = dynamicWidth);
-                }
+                ScaleTableColumns(actualTotalWidth, maxTotalWidth, columnCount, columnWidths, columnList);
             }
 
             // Build the format string to use for each row.
@@ -327,7 +291,8 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 while (row.Any(s => !string.IsNullOrWhiteSpace(s)))
                 {
-                    var formatParams = new string[columnCount];
+                    // Declaring as object[] so there is not a co-variant conversion when passing into string.Format.
+                    var formatParams = new object[columnCount];
 
                     for (int i = 0; i < columnCount; i++)
                     {
@@ -357,7 +322,7 @@ namespace TheObtuseAngle.ConsoleUtilities
                                         length += word.Length + 1; // add in the space that will be added back in after every word
                                         return length <= width;
                                     }));
-                                row[i] = column.Substring(formatParams[i].Length).TrimStart();
+                                row[i] = column.Substring(formatParams[i].ToString().Length).TrimStart();
                             }
                         }
                         else
@@ -369,7 +334,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
                     if (rowNum % 2 != 0)
                     {
-                        SetConsoleColor(hasHeaderRow ? Options.TableOptions.HeaderRowColor : Options.TableOptions.RowColor, isUsingConsoleOutput);
+                        SetConsoleColor(hasHeaderRow && rowNum == 1 ? Options.TableOptions.HeaderRowColor : Options.TableOptions.RowColor, isUsingConsoleOutput);
                     }
                     else if (Options.TableOptions.AlternateRowColor)
                     {
@@ -389,6 +354,87 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
 
             ResetConsoleColor(isUsingConsoleOutput);
+        }
+
+        private static void ScaleTableColumns(int actualTotalWidth, int maxTotalWidth, int columnCount, List<int> columnWidths, List<ColumnDefinition> columnList)
+        {
+            int remainingWidth = maxTotalWidth;
+            var dynamicColumnInfo = new List<Tuple<int, ColumnDefinition>>();
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                var definition = columnList.ElementAtOrDefault(i);
+                var mode = definition == null ? Options.TableOptions.DefaultColumnWidthMode : definition.WidthMode;
+
+                if (mode == ColumnWidthMode.Fixed && (definition == null || definition.Width <= 0))
+                {
+                    mode = ColumnWidthMode.Auto;
+                }
+
+                switch (mode)
+                {
+                    case ColumnWidthMode.Auto:
+                        columnWidths[i] = GetAdjustedWidth((columnWidths[i] * maxTotalWidth) / actualTotalWidth, definition);
+                        remainingWidth -= columnWidths[i];
+                        break;
+                    case ColumnWidthMode.Dynamic:
+                        dynamicColumnInfo.Add(new Tuple<int, ColumnDefinition>(i, definition));
+                        break;
+                    case ColumnWidthMode.Max:
+                        columnWidths[i] = GetAdjustedWidth(columnWidths[i], definition);
+                        remainingWidth -= columnWidths[i];
+                        break;
+                    case ColumnWidthMode.Fixed:
+                        var width = definition == null ? columnWidths[i] : definition.Width;
+                        columnWidths[i] = GetAdjustedWidth(width, definition);
+                        remainingWidth -= columnWidths[i];
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            // Compute and set the actual widths of all the dynamic columns now that the amount of remaining space is determined.
+            if (dynamicColumnInfo.Any())
+            {
+                var dynamicColumnCount = dynamicColumnInfo.Count;
+
+                foreach (var columnTuple in dynamicColumnInfo)
+                {
+                    var dynamicWidth = remainingWidth / dynamicColumnCount;
+                    var originalAdjustedWidth = GetAdjustedWidth(columnWidths[columnTuple.Item1], columnTuple.Item2);
+                    var adjustedWidth = GetAdjustedWidth(dynamicWidth, columnTuple.Item2);
+                    dynamicColumnCount--;
+
+                    if (originalAdjustedWidth < adjustedWidth)
+                    {
+                        // This means that the max width needed by this column is less than the space that's available.
+                        // In this case just use the smallest width possible to leave room for other dynamic columns.
+                        columnWidths[columnTuple.Item1] = originalAdjustedWidth;
+                    }
+                    else
+                    {
+                        columnWidths[columnTuple.Item1] = adjustedWidth;
+                    }
+
+                    remainingWidth -= columnWidths[columnTuple.Item1];
+                }
+            }
+
+            // Correct rounding issues as a result of integer division.
+            // Add width back into a dynamic column if there is one, otherwise just tack it onto the end.
+            var missingWidth = maxTotalWidth - columnWidths.Sum();
+            if (missingWidth > 0)
+            {
+                var index = dynamicColumnInfo.Any() ? dynamicColumnInfo[0].Item1 : columnWidths.Count - 1;
+                columnWidths[index] += missingWidth;
+            }
+        }
+
+        private static int GetAdjustedWidth(int width, ColumnDefinition definition)
+        {
+            var minWidth = definition != null && definition.MinWidth > 0 ? definition.MinWidth : Options.TableOptions.MinimumColumnWidth;
+            return minWidth > 0 && width < minWidth ? minWidth : width;
         }
 
         private static void SetConsoleColor(ConsoleColor color, bool isUsingConsoleOutput = true)
@@ -488,14 +534,8 @@ namespace TheObtuseAngle.ConsoleUtilities
                 }
             }
 
-            var missingRequiredArgs = possibleArguments.Where(a => a.IsRequired && !parsedArgs.Contains(a));
-
-            if (missingRequiredArgs.Any())
-            {
-                return new ArgumentParseResult(missingRequiredArgs);
-            }
-
-            return ArgumentParseResult.Success;
+            var missingRequiredArgs = possibleArguments.Where(a => a.IsRequired && !parsedArgs.Contains(a)).ToList();
+            return missingRequiredArgs.Any() ? new ArgumentParseResult(missingRequiredArgs) : ArgumentParseResult.Success;
         }
 
         private static string PromptForArgumentValue(IArgument argument)

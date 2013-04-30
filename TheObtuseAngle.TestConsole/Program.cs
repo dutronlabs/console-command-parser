@@ -22,9 +22,9 @@ namespace TheObtuseAngle.TestConsole
             var columnDefinitions = new[]
             {
                 new ColumnDefinition("Name", ColumnWidthMode.Max),
-                new ColumnDefinition("Url"),
+                new ColumnDefinition("Url", ColumnWidthMode.Dynamic),
                 new ColumnDefinition("Description", ColumnWidthMode.Dynamic),
-                new ColumnDefinition("Node Count", 5)
+                new ColumnDefinition("Node Count")
             };
 
             Console.WriteLine("All Clouds:");

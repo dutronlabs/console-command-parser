@@ -29,6 +29,9 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// <summary>
         /// Gets or sets the minimum width for every column in the table. This is a global default. The <see cref="ColumnDefinition.MinWidth"/> property overrides this value if set. Only positive values are allowed. Default is 5.
         /// </summary>
+        /// <remarks>
+        /// If this value is set too high then your table may be forced to wrap to the next line causing display issues.
+        /// </remarks>
         public int MinimumColumnWidth { get; set; }
 
         /// <summary>
