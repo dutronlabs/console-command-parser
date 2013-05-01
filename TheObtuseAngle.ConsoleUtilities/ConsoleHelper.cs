@@ -285,6 +285,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             var rowFormat = string.Join(" ", rowFormatParts);
             var rowNum = 1;
+            var hasWrittenHeaderRow = false;
 
             // Write the table
             foreach (var row in rows)
@@ -332,15 +333,27 @@ namespace TheObtuseAngle.ConsoleUtilities
                         }
                     }
 
+                    var color = ConsoleColor.White;
+
                     if (rowNum % 2 != 0)
                     {
-                        SetConsoleColor(hasHeaderRow && rowNum == 1 ? Options.TableOptions.HeaderRowColor : Options.TableOptions.RowColor, isUsingConsoleOutput);
+                        if (!hasWrittenHeaderRow && hasHeaderRow && rowNum == 1)
+                        {
+                            color = Options.TableOptions.HeaderRowColor;
+                            hasWrittenHeaderRow = true;
+                            rowNum--;
+                        }
+                        else
+                        {
+                            color = Options.TableOptions.RowColor;
+                        }
                     }
                     else if (Options.TableOptions.AlternateRowColor)
                     {
-                        SetConsoleColor(Options.TableOptions.AlternatingRowColor, isUsingConsoleOutput);
+                        color = Options.TableOptions.AlternatingRowColor;
                     }
 
+                    SetConsoleColor(color, isUsingConsoleOutput);
                     var line = string.Format(rowFormat, formatParams);
                     outputOverride.Write(line);
 
