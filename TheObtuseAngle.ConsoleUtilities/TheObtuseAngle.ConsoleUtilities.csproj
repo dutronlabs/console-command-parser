@@ -46,10 +46,14 @@
     <Compile Include="Arguments\IArgument.cs" />
     <Compile Include="Arguments\OptionalArgument.cs" />
     <Compile Include="Arguments\OptionalArgumentTemplate.cs" />
+    <Compile Include="Arguments\OptionalPasswordArgument.cs" />
+    <Compile Include="Arguments\OptionalPasswordArgumentTemplate.cs" />
     <Compile Include="Arguments\OptionalValueArgument.cs" />
     <Compile Include="Arguments\OptionalValueArgumentTemplate.cs" />
     <Compile Include="Arguments\RequiredArgument.cs" />
     <Compile Include="Arguments\RequiredArgumentTemplate.cs" />
+    <Compile Include="Arguments\RequiredPasswordArgument.cs" />
+    <Compile Include="Arguments\RequiredPasswordArgumentTemplate.cs" />
     <Compile Include="Arguments\RequiredValueArgument.cs" />
     <Compile Include="Arguments\RequiredValueArgumentTemplate.cs" />
     <Compile Include="ColumnDefinition.cs" />

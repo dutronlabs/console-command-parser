@@ -62,7 +62,7 @@ namespace TheObtuseAngle.ParseArgsConsole
                 new RequiredValueArgument("-environment", "-e", "The name of the environment to use for token switching", val => environment = val),
                 new RequiredValueArgument("-instances", "-i", "The three (3) SQL Server instances to connect to.", 3, ParseInstancesArgument),
                 new RequiredValueArgument("-user", "-u", "The SQL Server user to connect as", val => user = val),
-                new RequiredValueArgument("-password", "-pw", "The password of the SQL Server user", val => password = val),
+                new RequiredPasswordArgument("-password", "-pw", "The password of the SQL Server user", val => password = val),
                 new OptionalArgument("-restoreOnly", "-ro", "Whether or not to bypass the upgrade and ONLY restore the DBs", _ => restoreOnly = true),
                 new OptionalArgument("-backupOnly", "-bo", "Whether or not to bypass the upgrade and ONLY backup the DBs", _ => backupOnly = true)
             };

@@ -32,7 +32,12 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
         }
 
         public Argument(string name, string[] aliases, string description, bool requiresValue, bool isRequired, int numberOfValueArgs, Action<string> valueSetter)
-            : base(name, aliases, description, requiresValue, isRequired, numberOfValueArgs)
+            : this(name, aliases, description, requiresValue, isRequired, numberOfValueArgs, false, valueSetter)
+        {
+        }
+
+        public Argument(string name, string[] aliases, string description, bool requiresValue, bool isRequired, int numberOfValueArgs, bool isPassword, Action<string> valueSetter)
+            : base(name, aliases, description, requiresValue, isRequired, numberOfValueArgs, isPassword)
         {
             this.valueSetter = valueSetter;
         }

@@ -16,6 +16,8 @@ namespace TheObtuseAngle.ConsoleUtilities.Arguments
 
         int NumberOfValueArgs { get; set; }
 
+        bool IsPassword { get; set; }
+
         Action<string> ValueSetter { get; set; }
     }
 }

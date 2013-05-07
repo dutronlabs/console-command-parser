@@ -553,9 +553,36 @@ namespace TheObtuseAngle.ConsoleUtilities
 
         private static string PromptForArgumentValue(IArgument argument)
         {
-            WriteLine("Please provide a value for the argument {0} - {1}", argument.Name, argument.Description);
+            string value;
+            WriteLine("Please provide a value for the{0} argument {1} - {2}", argument.IsPassword ? " password" : string.Empty, argument.Name, argument.Description);
             Write("{0}: ", argument.Name);
-            var value = Console.ReadLine();
+
+            if (argument.IsPassword)
+            {
+                var charStack = new Stack<char>();
+                while (true)
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Enter)
+                    {
+                        break;
+                    }
+                    if (key.Key == ConsoleKey.Backspace && charStack.Any())
+                    {
+                        charStack.Pop();
+                    }
+                    else
+                    {
+                        charStack.Push(key.KeyChar);
+                    }
+                }
+                value = string.Join(string.Empty, charStack.Reverse());
+            }
+            else
+            {
+                value = Console.ReadLine();
+            }
+
             WriteLine();
             return value;
         }
