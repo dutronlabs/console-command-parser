@@ -7,6 +7,9 @@ using TheObtuseAngle.ConsoleUtilities.Arguments;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
+    /// <summary>
+    /// Contains a collection of methods that help with building console applications.
+    /// </summary>
     public static class ConsoleHelper
     {
         [ThreadStatic]
@@ -53,11 +56,20 @@ namespace TheObtuseAngle.ConsoleUtilities
             interactiveMode = isInteractiveMode;
         }
 
+        /// <summary>
+        /// Configures the console helper to use the given output writer.
+        /// </summary>
+        /// <param name="outputWriter">The output writer to use.</param>
         public static void Initialize(TextWriter outputWriter)
         {
             output = outputWriter;
         }
 
+        /// <summary>
+        /// Builds a string representation of the given exception, including all inner exceptions.
+        /// </summary>
+        /// <param name="e">The exception to convert to a string.</param>
+        /// <returns>The string representation of the exception.</returns>
         public static string GetFullDepthExceptionString(Exception e)
         {
             var builder = new StringBuilder();
@@ -73,12 +85,21 @@ namespace TheObtuseAngle.ConsoleUtilities
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Parses the given string and converts it to a boolean representation.
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>The boolean representation of the string.</returns>
         public static bool ParseBoolArg(string value)
         {
             string val = value.ToLowerInvariant();
             return val == "y" || val == "1" || val == "yes";
         }
 
+        /// <summary>
+        /// Writes the given exception to the console, including all inner exceptions.
+        /// </summary>
+        /// <param name="exception">The exception to write.</param>
         public static void WriteException(Exception exception)
         {
             WriteException(exception, false);
@@ -94,16 +115,29 @@ namespace TheObtuseAngle.ConsoleUtilities
             WriteError(GetFullDepthExceptionString(exception));
         }
 
+        /// <summary>
+        /// Writes the given string format to the console using the configures console error color.
+        /// </summary>
+        /// <param name="format">The format string.</param>
+        /// <param name="args">The format arguments.</param>
         public static void WriteError(string format, params object[] args)
         {
             Write(format, Options.ErrorConsoleColor, true, args);
         }
 
+        /// <summary>
+        /// Writes the given string format to the configured output stream using the configured console error color.
+        /// </summary>
+        /// <param name="format">The format string.</param>
+        /// <param name="args">The format arguments.</param>
         public static void Write(string format, params object[] args)
         {
             Write(format, Options.OutputConsoleColor, false, args);
         }
 
+        /// <summary>
+        /// Writes an empty line to the configured output stream.
+        /// </summary>
         public static void WriteLine()
         {
             WriteLine(Output);
@@ -117,31 +151,63 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
+        /// <summary>
+        /// Writes the given string format to the configured output stream, followed by a new line, using the configured console error color.
+        /// </summary>
+        /// <param name="format">The format string.</param>
+        /// <param name="args">The format arguments.</param>
         public static void WriteLine(string format, params object[] args)
         {
             Write(format, Options.OutputConsoleColor, true, args);
         }
 
+        /// <summary>
+        /// Writes the given string to the configured output stream wrapping the text at word boundaries.
+        /// </summary>
+        /// <param name="textToWrap">The text to write.</param>
+        /// <param name="offsetOverride">A number to use as the left offset for new lines. By default the current horizontal position on the console.</param>
         public static void WriteWrapped(string textToWrap, int? offsetOverride = null)
         {
             WriteWrapped(Output, textToWrap, offsetOverride);
         }
 
+        /// <summary>
+        /// Writes the collection of rows to the output stream in tabular form using the configured <see cref="TableOptions"/>.
+        /// </summary>
+        /// <param name="dataSource">The collection of data to write.</param>
         public static void WriteTable(IEnumerable<IEnumerable<string>> dataSource)
         {
             WriteTable(Output, null, dataSource, o => o);
         }
 
+        /// <summary>
+        /// Writes the collection of rows to the configured output stream in tabular form using the given <see cref="ColumnDefinition"/> collection and the configured <see cref="TableOptions"/>.
+        /// </summary>
+        /// <param name="columnDefinitions">A collection of <see cref="ColumnDefinition"/> to use when writing the table.</param>
+        /// <param name="dataSource">The collection of data to write.</param>
         public static void WriteTable(IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<IEnumerable<string>> dataSource)
         {
             WriteTable(Output, columnDefinitions, dataSource, o => o);
         }
 
+        /// <summary>
+        /// Writes the given enumerable data source to the configured output stream in tabular form using the given transform function to produce a single table row.
+        /// </summary>
+        /// <typeparam name="T">The type of object to translate to a table row.</typeparam>
+        /// <param name="dataSource">The collection of data to write in tabular form.</param>
+        /// <param name="rowProducer">The transform function to invoke to produce a single table row.</param>
         public static void WriteTable<T>(IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
         {
             WriteTable(Output, null, dataSource, rowProducer);
         }
 
+        /// <summary>
+        /// Writes the given enumerable data source to the configured output stream in tabular form using the given <see cref="ColumnDefinition"/> collection and transform function to produce a single table row.
+        /// </summary>
+        /// <typeparam name="T">The type of object to translate to a table row.</typeparam>
+        /// <param name="columnDefinitions">A collection of <see cref="ColumnDefinition"/> to use when writing the table.</param>
+        /// <param name="dataSource">The collection of data to write in tabular form.</param>
+        /// <param name="rowProducer">The transform function to invoke to produce a single table row.</param>
         public static void WriteTable<T>(IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<T> dataSource, Func<T, IEnumerable<string>> rowProducer)
         {
             WriteTable(Output, columnDefinitions, dataSource, rowProducer);
@@ -174,6 +240,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             Console.ForegroundColor = originalColor;
         }
 
+        /// <summary>
+        /// Writes the given string to the output stream wrapping the text at word boundaries.
+        /// </summary>
+        /// <param name="outputOverride">The <see cref="TextWriter"/> to write output to.</param>
+        /// <param name="textToWrap">The text to write.</param>
+        /// <param name="offsetOverride">A number to use as the left offset for new lines. By default the current horizontal position on the console.</param>
         public static void WriteWrapped(TextWriter outputOverride, string textToWrap, int? offsetOverride = null)
         {
             if (!ReferenceEquals(outputOverride, Console.Out) || Console.CursorLeft + textToWrap.Length < Console.BufferWidth)
@@ -209,11 +281,26 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
+        /// <summary>
+        /// Writes the given enumerable data source to the output stream in tabular form using the given transform function to produce a single table row.
+        /// </summary>
+        /// <typeparam name="T">The type of object to translate to a table row.</typeparam>
+        /// <param name="outputOverride">The <see cref="TextWriter"/> to write output to.</param>
+        /// <param name="dataSource">The collection of data to write in tabular form.</param>
+        /// <param name="rowProducer">The transform function to invoke to produce a single table row.</param>
         public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<T> dataSource, Func<T, IEnumerable<object>> rowProducer)
         {
             WriteTable(outputOverride, null, dataSource, rowProducer);
         }
 
+        /// <summary>
+        /// Writes the given enumerable data source to the output stream in tabular form using the given <see cref="ColumnDefinition"/> collection and transform function to produce a single table row.
+        /// </summary>
+        /// <typeparam name="T">The type of object to translate to a table row.</typeparam>
+        /// <param name="outputOverride">The <see cref="TextWriter"/> to write output to.</param>
+        /// <param name="columnDefinitions">A collection of <see cref="ColumnDefinition"/> to use when writing the table.</param>
+        /// <param name="dataSource">The collection of data to write in tabular form.</param>
+        /// <param name="rowProducer">The transform function to invoke to produce a single table row.</param>
         public static void WriteTable<T>(TextWriter outputOverride, IEnumerable<ColumnDefinition> columnDefinitions, IEnumerable<T> dataSource, Func<T, IEnumerable<object>> rowProducer)
         {
             if (dataSource == null)
@@ -466,6 +553,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
+        /// <summary>
+        /// Parses the given collection of arguments into the given set of possible arguments.
+        /// </summary>
+        /// <param name="consoleArgs">The collection of console arguments.</param>
+        /// <param name="possibleArguments">The set of possible arguments to parse the console args into.</param>
+        /// <returns>An <see cref="ArgumentParseResult"/> instance representing the result.</returns>
         public static ArgumentParseResult ParseArguments(string[] consoleArgs, params IArgument[] possibleArguments)
         {
             var parsedArgs = new List<IArgument>();

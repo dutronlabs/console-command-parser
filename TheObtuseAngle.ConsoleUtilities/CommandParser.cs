@@ -7,13 +7,24 @@ using TheObtuseAngle.ConsoleUtilities.Commands;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
+    /// <summary>
+    /// Provides methods and events used to parse raw console arguments into <see cref="TCommand"/> instances.
+    /// </summary>
+    /// <typeparam name="TCommand">The concrete <see cref="ICommand"/> implementation to parse the raw arguments into.</typeparam>
     public class CommandParser<TCommand> : ArgumentParser
         where TCommand : class, ICommand
     {
+        /// <summary>
+        /// Constructs a new <see cref="CommandParser{TCommand}"/> instance using the default <see cref="ParseOptions"/>.
+        /// </summary>
         public CommandParser()
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="CommandParser{TCommand}"/> instance using the given <see cref="ParseOptions"/>.
+        /// </summary>
+        /// <param name="parseOptions">The <see cref="ParseOptions"/> to use.</param>
         public CommandParser(ParseOptions parseOptions)
             : base(parseOptions)
         {
@@ -43,6 +54,13 @@ namespace TheObtuseAngle.ConsoleUtilities
         /// </summary>
         public event Action<TCommand, TextWriter> DoneWritingDetailedCommandUsage;
 
+        /// <summary>
+        /// Parses the given raw console arguments into a matching <see cref="TCommand"/> instances from the given collection of possible commands.
+        /// </summary>
+        /// <param name="consoleArgs">The raw console arguments.</param>
+        /// <param name="possibleCommands">The collection of possible commands to look for when parsing.</param>
+        /// <param name="matchingCommand">The matching command.</param>
+        /// <returns>A <see cref="ParseResult"/> indicating the result of the parsing.</returns>
         public virtual ParseResult ParseCommand(string[] consoleArgs, IEnumerable<TCommand> possibleCommands, out TCommand matchingCommand)
         {
             matchingCommand = null;
@@ -131,6 +149,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             return ParseResult.Success;
         }
 
+        /// <summary>
+        /// Parses the given raw console arguments from the given collection of possible commands and executes the match immediately.
+        /// </summary>
+        /// <param name="consoleArgs">The raw console arguments.</param>
+        /// <param name="possibleCommands">The collection of possible commands to look for when parsing.</param>
+        /// <returns>A <see cref="ParseResult"/> indicating the result of the parsing.</returns>
         public virtual ParseResult ParseCommandAndExecute(string[] consoleArgs, IEnumerable<TCommand> possibleCommands)
         {
             TCommand command;
@@ -160,6 +184,10 @@ namespace TheObtuseAngle.ConsoleUtilities
             }
         }
 
+        /// <summary>
+        /// Writes the usage help for the given collection of commands.
+        /// </summary>
+        /// <param name="commands">The collection of commands.</param>
         public virtual void WriteUsage(IEnumerable<TCommand> commands)
         {
             if (quietMode)
@@ -208,6 +236,10 @@ namespace TheObtuseAngle.ConsoleUtilities
             RaiseDoneWritingSimpleCommandUsage();
         }
 
+        /// <summary>
+        /// Writes the usage of the given command.
+        /// </summary>
+        /// <param name="command">The command to write usage help for.</param>
         public void WriteUsage(TCommand command)
         {
             var result = RaiseWritingDetailedCommandUsage(command);

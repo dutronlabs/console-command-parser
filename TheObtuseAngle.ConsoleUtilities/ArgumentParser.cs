@@ -8,6 +8,9 @@ using TheObtuseAngle.ConsoleUtilities.Arguments;
 
 namespace TheObtuseAngle.ConsoleUtilities
 {
+    /// <summary>
+    /// Provides methods used to parse raw console arguments into given collections of <see cref="IArgument"/> instances.
+    /// </summary>
     public class ArgumentParser
     {
         protected IArgument quietModeArgument;
@@ -16,11 +19,18 @@ namespace TheObtuseAngle.ConsoleUtilities
         protected bool quietMode;
         protected bool interactiveMode;
 
+        /// <summary>
+        /// Constructs a new <see cref="ArgumentParser"/> instance using the default <see cref="ParseOptions"/>.
+        /// </summary>
         public ArgumentParser()
             : this(ParseOptions.Defaults)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ArgumentParser"/> instance using the given <see cref="ParseOptions"/>.
+        /// </summary>
+        /// <param name="parseOptions">The <see cref="ConsoleUtilities.ParseOptions"/> instance to use.</param>
         public ArgumentParser(ParseOptions parseOptions)
         {
             if (parseOptions == null)
@@ -34,13 +44,25 @@ namespace TheObtuseAngle.ConsoleUtilities
             SetAllIncludedArguments();
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="ConsoleUtilities.ParseOptions"/>
+        /// </summary>
         public ParseOptions ParseOptions { get; set; }
 
+        /// <summary>
+        /// Gets a flag indicating whether or not the parser should prompt for missing required arguments.
+        /// </summary>
         public bool InteractiveMode
         {
             get { return interactiveMode; }
         }
 
+        /// <summary>
+        /// Parses the given raw console arguments into the collection of possible arguments.
+        /// </summary>
+        /// <param name="consoleArgs">The raw console arguments.</param>
+        /// <param name="possibleArguments">The collection of <see cref="IArgument"/> instances to parse the raw arguments into.</param>
+        /// <returns></returns>
         public virtual ParseResult ParseArguments(string[] consoleArgs, IEnumerable<IArgument> possibleArguments)
         {
             if (possibleArguments == null)
@@ -66,6 +88,10 @@ namespace TheObtuseAngle.ConsoleUtilities
             return ProcessArgumentParseResult(parseResult, argumentArray, true);
         }
 
+        /// <summary>
+        /// Writes the collection of arguments to the output stream.
+        /// </summary>
+        /// <param name="arguments">The collection of <see cref="IArgument"/> objects to write.</param>
         public void WriteUsage(IEnumerable<IArgument> arguments)
         {
             WriteUsage(arguments, true, true, null);

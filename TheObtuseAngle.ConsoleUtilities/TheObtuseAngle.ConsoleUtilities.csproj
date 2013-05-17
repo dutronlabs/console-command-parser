@@ -68,7 +68,6 @@
     <Compile Include="Composition\ExportManyArgumentsAttribute.cs" />
     <Compile Include="Composition\MemberInfoExtensions.cs" />
     <Compile Include="ParseResult.cs" />
-    <Compile Include="CommandParseResult.cs" />
     <Compile Include="ConsoleHelperExtensions.cs" />
     <Compile Include="ArgumentParser.cs" />
     <Compile Include="ConsoleHelper.cs" />
