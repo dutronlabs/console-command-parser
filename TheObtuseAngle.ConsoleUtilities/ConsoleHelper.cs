@@ -444,6 +444,10 @@ namespace TheObtuseAngle.ConsoleUtilities
                     var line = string.Format(rowFormat, formatParams);
                     outputOverride.Write(line);
 
+                    if (actualTotalWidth <= maxTotalWidth)
+                    {
+                        outputOverride.WriteLine();
+                    }
                     if (Options.TableOptions.WriteEmptyLineBetweenRows)
                     {
                         outputOverride.WriteLine();
