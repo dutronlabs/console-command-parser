@@ -81,12 +81,19 @@ namespace TheObtuseAngle.ConsoleUtilities
             foreach (var cmd in allCommands)
             {
                 cmd.OnBeforeParse();
-
                 var commandBase = cmd as CommandBase;
-                if (ParseOptions.UseArgumentComposition && commandBase != null)
+                
+                if (commandBase == null)
+                {
+                    continue;
+                }
+                
+                if (ParseOptions.UseArgumentComposition)
                 {
                     commandBase.ComposeArguments();
                 }
+
+                commandBase.InjectWriteUsageMethod(ParseOptions);
             }
 
             if (consoleArgs.Length == 0)

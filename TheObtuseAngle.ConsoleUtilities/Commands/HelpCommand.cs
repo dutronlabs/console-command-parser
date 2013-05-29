@@ -5,14 +5,14 @@ using TheObtuseAngle.ConsoleUtilities.Arguments;
 
 namespace TheObtuseAngle.ConsoleUtilities.Commands
 {
-    public sealed class HelpCommand<TCommand> : CommandBase
+    internal class HelpCommand<TCommand> : CommandBase
         where TCommand : class, ICommand
     {
         private readonly IEnumerable<TCommand> possibleCommands;
         private readonly CommandParser<TCommand> parser;
         private string commandName;
 
-        internal HelpCommand(IEnumerable<TCommand> possibleCommands, CommandParser<TCommand> parser)
+        public HelpCommand(IEnumerable<TCommand> possibleCommands, CommandParser<TCommand> parser)
             : base(parser.ParseOptions.HelpCommandTemplate.Name, parser.ParseOptions.HelpCommandTemplate.Title, parser.ParseOptions.HelpCommandTemplate.Description, int.MaxValue)
         {
             this.possibleCommands = possibleCommands;

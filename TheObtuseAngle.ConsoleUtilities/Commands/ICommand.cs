@@ -9,12 +9,12 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
     public interface ICommand
     {
         /// <summary>
-        /// The name of the command.  This is what the user types into the console to invoke the command.
+        /// The name of the command. This is what the user would type to invoke the command.
         /// </summary>
         string Name { get; }
 
         /// <summary>
-        /// The title of the command.  This is a short, one line description of what the command does.
+        /// The short title of the command to use when writing on-screen help with the <see cref="WriteUsageMode.CommandNameAndTitle"/> mode.
         /// </summary>
         string Title { get; }
 
@@ -40,10 +40,13 @@ namespace TheObtuseAngle.ConsoleUtilities.Commands
         bool Execute();
 
         /// <summary>
-        /// Writes the usage help for this command to the console.  When deriving from CommandBase the default behavior will be the same as calling the WriteUsage method on a CommandParser&lt;T&gt; instance with the default ParseOptions.
+        /// Writes the usage help for this command to the console.  When deriving from CommandBase the default behavior will be the same as calling the WriteUsage method on a <see cref="CommandParser{TCommand}"/> instance with the default <see cref="ParseOptions"/>.
         /// </summary>
         void WriteUsage();
 
+        /// <summary>
+        /// Called on each command passed into a <see cref="CommandParser{TCommand}"/> instance before the raw console arguments are parsed into commands.
+        /// </summary>
         void OnBeforeParse();
     }
 }
