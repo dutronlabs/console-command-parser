@@ -57,6 +57,7 @@
     <Compile Include="Arguments\RequiredPasswordArgumentTemplate.cs" />
     <Compile Include="Arguments\RequiredValueArgument.cs" />
     <Compile Include="Arguments\RequiredValueArgumentTemplate.cs" />
+    <Compile Include="ArgumentWriteUsageOverride.cs" />
     <Compile Include="ColumnDefinition.cs" />
     <Compile Include="CommandParser.cs" />
     <Compile Include="Commands\CommandBase.cs" />

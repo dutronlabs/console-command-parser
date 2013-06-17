@@ -45,6 +45,12 @@ namespace TheObtuseAngle.ConsoleUtilities
         }
 
         /// <summary>
+        /// Raised for each argument when the parser is writing the usage help for all possible arguments.
+        /// This is an opportunity to override the arguments's properties or skip it entirely.
+        /// </summary>
+        public event Func<IArgument, ArgumentWriteUsageOverride> WritingArgumentUsage;
+
+        /// <summary>
         /// Gets or sets the <see cref="ConsoleUtilities.ParseOptions"/>
         /// </summary>
         public ParseOptions ParseOptions { get; set; }
@@ -118,6 +124,29 @@ namespace TheObtuseAngle.ConsoleUtilities
             {
                 argList.Add(helpArgument);
             }
+
+            var argumentsToRemove = new List<IArgument>();
+
+            foreach (var arg in argList)
+            {
+                var overrides = RaiseWritingArgumentUsage(arg);
+                
+                if (overrides == null)
+                {
+                    continue;
+                }
+                
+                if (overrides.Skip)
+                {
+                    argumentsToRemove.Add(arg);
+                }
+                else if (!string.IsNullOrWhiteSpace(overrides.DescriptionOverride))
+                {
+                    arg.Description = overrides.DescriptionOverride;
+                }
+            }
+
+            argList.RemoveRange(argumentsToRemove);
 
             int maxNameLength = 0;
             bool hasRequiredArgs = false;
@@ -298,6 +327,12 @@ namespace TheObtuseAngle.ConsoleUtilities
             OnArgumentTemplateChanged(ArgumentTemplateType.Help, ParseOptions.HelpArgumentTemplate);
             OnArgumentTemplateChanged(ArgumentTemplateType.QuietMode, ParseOptions.QuietModeArgumentTemplate);
             OnArgumentTemplateChanged(ArgumentTemplateType.InteractiveMode, ParseOptions.InteractiveModeArgumentTemplate);
+        }
+
+        private ArgumentWriteUsageOverride RaiseWritingArgumentUsage(IArgument argument)
+        {
+            var writingArgumentUsage = WritingArgumentUsage;
+            return writingArgumentUsage != null ? writingArgumentUsage(argument) : null;
         }
     }
 }
