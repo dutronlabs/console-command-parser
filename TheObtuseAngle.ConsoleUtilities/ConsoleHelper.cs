@@ -76,6 +76,7 @@ namespace TheObtuseAngle.ConsoleUtilities
 
             while (e != null)
             {
+                builder.AppendLine(e.GetType().FullName);
                 builder.AppendLine(e.Message);
                 builder.AppendLine(e.StackTrace);
                 builder.AppendLine();
